@@ -14,6 +14,7 @@ export const etapas: Etapa[] = [
 export const estados: Estado[] = [
   'Modelagem',
   'Aguarda Componentes',
+  'FALTA COMPONENTES',
   'Aguarda Malha',
   'Com Defeito',
   'Aguarda Comentários',

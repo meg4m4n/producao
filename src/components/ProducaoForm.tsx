@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Save, Package, Plus, Trash2 } from 'lucide-react';
-import { Producao, Etapa, Estado, VarianteProducao } from '../types';
+import { X, Save, Package, Plus, Trash2, Copy } from 'lucide-react';
+import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados, clientes } from '../data/mockData';
 
 interface ProducaoFormProps {
@@ -10,20 +10,45 @@ interface ProducaoFormProps {
   producao?: Producao;
 }
 
+interface TabelaItem {
+  id: string;
+  cor: string;
+  tamanho: string;
+  quantidade: number;
+}
+
 const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, producao }) => {
-  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>(() => {
-    // Inicializar com tamanhos padrão e tamanhos existentes da produção
-    const tamanhosBase = ['XS', 'S', 'M', 'L', 'XL'];
-    if (producao) {
-      const tamanhosExistentes = Array.from(
-        new Set(producao.variantes.flatMap(v => Object.keys(v.tamanhos)))
-      );
-      return Array.from(new Set([...tamanhosBase, ...tamanhosExistentes])).sort();
-    }
-    return tamanhosBase;
-  });
-  
-  const [novoTamanho, setNovoTamanho] = useState('');
+  // Converter variantes para formato de tabela
+  const variantesToTabela = (variantes: any[]): TabelaItem[] => {
+    const items: TabelaItem[] = [];
+    variantes.forEach(variante => {
+      Object.entries(variante.tamanhos).forEach(([tamanho, quantidade]) => {
+        items.push({
+          id: `${variante.cor}-${tamanho}`,
+          cor: variante.cor,
+          tamanho,
+          quantidade: quantidade as number
+        });
+      });
+    });
+    return items;
+  };
+
+  // Converter tabela para formato de variantes
+  const tabelaToVariantes = (tabela: TabelaItem[]) => {
+    const variantesMap = new Map();
+    
+    tabela.forEach(item => {
+      if (!variantesMap.has(item.cor)) {
+        variantesMap.set(item.cor, { cor: item.cor, tamanhos: {} });
+      }
+      if (item.quantidade > 0) {
+        variantesMap.get(item.cor).tamanhos[item.tamanho] = item.quantidade;
+      }
+    });
+    
+    return Array.from(variantesMap.values()).filter(v => Object.keys(v.tamanhos).length > 0);
+  };
 
   const [formData, setFormData] = useState({
     marca: producao?.marca || '',
@@ -33,26 +58,44 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     descricao: producao?.descricao || '',
     tipoPeca: producao?.tipoPeca || '',
     genero: producao?.genero || 'Unissexo' as const,
-    variantes: producao?.variantes || [{ cor: '', tamanhos: {} }] as VarianteProducao[],
     etapa: producao?.etapa || 'Desenvolvimento' as Etapa,
     estado: producao?.estado || 'Modelagem' as Estado,
     dataInicio: producao?.dataInicio || new Date().toISOString().split('T')[0],
     dataPrevisao: producao?.dataPrevisao || '',
     dataEstimadaEntrega: producao?.dataEstimadaEntrega || '',
     emProducao: producao?.emProducao || false,
+    faltaComponentes: producao?.estado === 'FALTA COMPONENTES' || false,
     localProducao: producao?.localProducao || 'Interno' as const,
     empresaExterna: producao?.empresaExterna || '',
     linkOdoo: producao?.linkOdoo || ''
   });
 
+  const [tabelaItems, setTabelaItems] = useState<TabelaItem[]>(() => {
+    if (producao) {
+      return variantesToTabela(producao.variantes);
+    }
+    return [];
+  });
+
+  const [novaCor, setNovaCor] = useState('');
+  const [novoTamanho, setNovoTamanho] = useState('');
+
   const clienteSelecionado = clientes.find(c => c.nome === formData.cliente);
   const marcasDisponiveis = clienteSelecionado?.marcas || [];
 
+  // Obter cores e tamanhos únicos
+  const coresUnicas = Array.from(new Set(tabelaItems.map(item => item.cor))).filter(Boolean);
+  const tamanhosUnicos = Array.from(new Set(tabelaItems.map(item => item.tamanho))).filter(Boolean);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const producaoData = producao 
-      ? { ...formData, id: producao.id } as Producao
-      : formData;
+    const variantes = tabelaToVariantes(tabelaItems);
+    const producaoData = { 
+      ...formData, 
+      variantes,
+      estado: formData.faltaComponentes ? 'FALTA COMPONENTES' : formData.estado
+    };
+    delete (producaoData as any).faltaComponentes;
     onSave(producaoData);
     onClose();
   };
@@ -69,75 +112,121 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     }));
   };
 
-  const addVariante = () => {
-    setFormData(prev => ({
-      ...prev,
-      variantes: [...prev.variantes, { cor: '', tamanhos: {} }]
-    }));
-  };
-
-  const removeVariante = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      variantes: prev.variantes.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateVariante = (index: number, field: keyof VarianteProducao, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      variantes: prev.variantes.map((v, i) => 
-        i === index ? { ...v, [field]: value } : v
-      )
-    }));
-  };
-
-  const updateTamanho = (varianteIndex: number, tamanho: string, quantidade: number) => {
-    setFormData(prev => ({
-      ...prev,
-      variantes: prev.variantes.map((v, i) => 
-        i === varianteIndex 
-          ? { 
-              ...v, 
-              tamanhos: { 
-                ...v.tamanhos, 
-                [tamanho]: quantidade || 0 
-              } 
-            } 
-          : v
-      )
-    }));
+  const adicionarCor = () => {
+    if (!novaCor.trim() || coresUnicas.includes(novaCor.trim())) return;
+    
+    const cor = novaCor.trim();
+    const novosItems: TabelaItem[] = [];
+    
+    if (tamanhosUnicos.length === 0) {
+      // Se não há tamanhos, adicionar tamanhos padrão
+      const tamanhosDefault = ['XS', 'S', 'M', 'L', 'XL'];
+      tamanhosDefault.forEach(tamanho => {
+        novosItems.push({
+          id: `${cor}-${tamanho}`,
+          cor,
+          tamanho,
+          quantidade: 0
+        });
+      });
+    } else {
+      // Adicionar a cor para todos os tamanhos existentes
+      tamanhosUnicos.forEach(tamanho => {
+        novosItems.push({
+          id: `${cor}-${tamanho}`,
+          cor,
+          tamanho,
+          quantidade: 0
+        });
+      });
+    }
+    
+    setTabelaItems(prev => [...prev, ...novosItems]);
+    setNovaCor('');
   };
 
   const adicionarTamanho = () => {
-    if (novoTamanho.trim() && !tamanhosDisponiveis.includes(novoTamanho.trim().toUpperCase())) {
-      const tamanhoFormatado = novoTamanho.trim().toUpperCase();
-      setTamanhosDisponiveis(prev => [...prev, tamanhoFormatado].sort());
-      setNovoTamanho('');
+    if (!novoTamanho.trim() || tamanhosUnicos.includes(novoTamanho.trim().toUpperCase())) return;
+    
+    const tamanho = novoTamanho.trim().toUpperCase();
+    const novosItems: TabelaItem[] = [];
+    
+    if (coresUnicas.length === 0) {
+      // Se não há cores, adicionar uma cor padrão
+      novosItems.push({
+        id: `Nova Cor-${tamanho}`,
+        cor: 'Nova Cor',
+        tamanho,
+        quantidade: 0
+      });
+    } else {
+      // Adicionar o tamanho para todas as cores existentes
+      coresUnicas.forEach(cor => {
+        novosItems.push({
+          id: `${cor}-${tamanho}`,
+          cor,
+          tamanho,
+          quantidade: 0
+        });
+      });
+    }
+    
+    setTabelaItems(prev => [...prev, ...novosItems]);
+    setNovoTamanho('');
+  };
+
+  const removerCor = (cor: string) => {
+    if (confirm(`Remover todas as entradas da cor "${cor}"?`)) {
+      setTabelaItems(prev => prev.filter(item => item.cor !== cor));
     }
   };
 
   const removerTamanho = (tamanho: string) => {
-    // Verificar se o tamanho está sendo usado em alguma variante
-    const tamanhoEmUso = formData.variantes.some(v => 
-      v.tamanhos[tamanho] && v.tamanhos[tamanho] > 0
-    );
-    
-    if (tamanhoEmUso) {
-      if (!confirm(`O tamanho ${tamanho} está sendo usado. Remover mesmo assim?`)) {
-        return;
-      }
+    if (confirm(`Remover todas as entradas do tamanho "${tamanho}"?`)) {
+      setTabelaItems(prev => prev.filter(item => item.tamanho !== tamanho));
     }
-    
-    setTamanhosDisponiveis(prev => prev.filter(t => t !== tamanho));
-    // Remover o tamanho de todas as variantes
-    setFormData(prev => ({
-      ...prev,
-      variantes: prev.variantes.map(v => {
-        const { [tamanho]: removed, ...restTamanhos } = v.tamanhos;
-        return { ...v, tamanhos: restTamanhos };
-      })
+  };
+
+  const removerItem = (id: string) => {
+    setTabelaItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const duplicarLinha = (item: TabelaItem) => {
+    const novoItem: TabelaItem = {
+      id: `${item.cor}-${item.tamanho}-${Date.now()}`,
+      cor: item.cor,
+      tamanho: item.tamanho,
+      quantidade: item.quantidade
+    };
+    setTabelaItems(prev => [...prev, novoItem]);
+  };
+
+  const updateItem = (id: string, field: keyof TabelaItem, value: string | number) => {
+    setTabelaItems(prev => prev.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value };
+        // Atualizar ID se cor ou tamanho mudaram
+        if (field === 'cor' || field === 'tamanho') {
+          updatedItem.id = `${updatedItem.cor}-${updatedItem.tamanho}`;
+        }
+        return updatedItem;
+      }
+      return item;
     }));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, currentIndex: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Adicionar nova linha vazia
+      const novoItem: TabelaItem = {
+        id: `nova-${Date.now()}`,
+        cor: '',
+        tamanho: '',
+        quantidade: 0
+      };
+      setTabelaItems(prev => [...prev, novoItem]);
+    }
   };
 
   if (!isOpen) return null;
@@ -261,113 +350,175 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
             />
           </div>
 
-          {/* Variantes (Cores e Tamanhos) */}
+          {/* Tabela Dinâmica de Cores e Tamanhos */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <label className="block text-sm font-medium text-gray-700">Variantes (Cores e Tamanhos)</label>
-              <button
-                type="button"
-                onClick={addVariante}
-                className="flex items-center space-x-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Adicionar Cor</span>
-              </button>
+              <label className="block text-sm font-medium text-gray-700">Quantidades por Cor e Tamanho</label>
+              <div className="flex space-x-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={novaCor}
+                    onChange={(e) => setNovaCor(e.target.value)}
+                    placeholder="Nova cor"
+                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        adicionarCor();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={adicionarCor}
+                    className="flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Cor</span>
+                  </button>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={novoTamanho}
+                    onChange={(e) => setNovoTamanho(e.target.value)}
+                    placeholder="Novo tamanho"
+                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        adicionarTamanho();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={adicionarTamanho}
+                    className="flex items-center space-x-1 px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Tamanho</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto max-h-96">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                        Cor
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                        Tamanho
+                      </th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 border-b border-gray-200">
+                        Quantidade
+                      </th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 border-b border-gray-200 w-20">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tabelaItems.map((item, index) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 border-b border-gray-200">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={item.cor}
+                              onChange={(e) => updateItem(item.id, 'cor', e.target.value)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              onKeyPress={(e) => handleKeyPress(e, index)}
+                            />
+                            {coresUnicas.filter(c => c === item.cor).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removerCor(item.cor)}
+                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                title={`Remover cor ${item.cor}`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 border-b border-gray-200">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={item.tamanho}
+                              onChange={(e) => updateItem(item.id, 'tamanho', e.target.value.toUpperCase())}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              onKeyPress={(e) => handleKeyPress(e, index)}
+                            />
+                            {tamanhosUnicos.filter(t => t === item.tamanho).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removerTamanho(item.tamanho)}
+                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                title={`Remover tamanho ${item.tamanho}`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 border-b border-gray-200">
+                          <input
+                            type="number"
+                            value={item.quantidade}
+                            onChange={(e) => updateItem(item.id, 'quantidade', parseInt(e.target.value) || 0)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                            onKeyPress={(e) => handleKeyPress(e, index)}
+                          />
+                        </td>
+                        <td className="px-4 py-2 border-b border-gray-200">
+                          <div className="flex justify-center space-x-1">
+                            <button
+                              type="button"
+                              onClick={() => duplicarLinha(item)}
+                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                              title="Duplicar linha"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removerItem(item.id)}
+                              className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                              title="Remover linha"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {tabelaItems.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                          Nenhuma variante adicionada. Use os botões acima para adicionar cores e tamanhos.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
             
-            <div className="space-y-4">
-              {formData.variantes.map((variante, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-gray-900">Cor {index + 1}</h4>
-                    {formData.variantes.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeVariante(index)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Cor</label>
-                      <input
-                        type="text"
-                        value={variante.cor}
-                        onChange={(e) => updateVariante(index, 'cor', e.target.value)}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder="Ex: Preto, Branco..."
-                        required
-                      />
-                    </div>
-                    
-                    {/* Tamanhos em grid compacto */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-xs font-medium text-gray-700">Quantidades por Tamanho</label>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={novoTamanho}
-                            onChange={(e) => setNovoTamanho(e.target.value)}
-                            placeholder="Ex: XXL"
-                            className="w-16 px-1 py-1 border border-gray-300 rounded text-xs text-center focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                adicionarTamanho();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={adicionarTamanho}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Adicionar tamanho"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className={`grid gap-2 ${tamanhosDisponiveis.length <= 5 ? 'grid-cols-5' : tamanhosDisponiveis.length <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
-                        {tamanhosDisponiveis.map(tamanho => (
-                          <div key={tamanho} className="text-center">
-                            <div className="flex items-center justify-center mb-1">
-                              <label className="text-xs font-medium text-gray-600">{tamanho}</label>
-                              {!['XS', 'S', 'M', 'L', 'XL'].includes(tamanho) && (
-                                <button
-                                  type="button"
-                                  onClick={() => removerTamanho(tamanho)}
-                                  className="ml-1 p-0.5 text-gray-400 hover:text-red-600 transition-colors"
-                                  title={`Remover tamanho ${tamanho}`}
-                                >
-                                  <X className="w-2 h-2" />
-                                </button>
-                              )}
-                            </div>
-                            <input
-                              type="number"
-                              value={variante.tamanhos[tamanho] || ''}
-                              onChange={(e) => updateTamanho(index, tamanho, parseInt(e.target.value) || 0)}
-                              className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                              min="0"
-                              placeholder="0"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      {tamanhosDisponiveis.length > 5 && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Dica: Use Enter para adicionar rapidamente um novo tamanho
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="text-xs text-gray-500 mt-2 space-y-1">
+              <p>• Pressione Enter numa célula para adicionar uma nova linha</p>
+              <p>• Use o botão de duplicar para copiar uma linha existente</p>
+              <p>• Adicionar uma nova cor cria automaticamente linhas para todos os tamanhos</p>
+              <p>• Adicionar um novo tamanho cria automaticamente linhas para todas as cores</p>
             </div>
           </div>
 
@@ -388,15 +539,43 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-              <select
-                value={formData.estado}
-                onChange={(e) => handleChange('estado', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {estados.map(estado => (
-                  <option key={estado} value={estado}>{estado}</option>
-                ))}
-              </select>
+              <div className="space-y-3">
+                <select
+                  value={formData.faltaComponentes ? 'FALTA COMPONENTES' : formData.estado}
+                  onChange={(e) => {
+                    if (e.target.value === 'FALTA COMPONENTES') {
+                      handleChange('faltaComponentes', true);
+                    } else {
+                      handleChange('faltaComponentes', false);
+                      handleChange('estado', e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={formData.faltaComponentes}
+                >
+                  {estados.filter(estado => estado !== 'FALTA COMPONENTES').map(estado => (
+                    <option key={estado} value={estado}>{estado}</option>
+                  ))}
+                </select>
+                
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="faltaComponentes"
+                    checked={formData.faltaComponentes}
+                    onChange={(e) => {
+                      handleChange('faltaComponentes', e.target.checked);
+                      if (!e.target.checked) {
+                        handleChange('estado', 'Modelagem');
+                      }
+                    }}
+                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  />
+                  <label htmlFor="faltaComponentes" className="text-sm font-medium text-red-700">
+                    FALTA COMPONENTES
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center space-x-3 pt-6">

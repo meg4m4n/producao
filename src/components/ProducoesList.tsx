@@ -149,20 +149,25 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
               rounded-lg border p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
               ${isUrgent(producao.dataEstimadaEntrega) 
                 ? 'bg-red-50 border-red-200' 
-                : 'bg-white border-gray-200'
+                : producao.estado === 'FALTA COMPONENTES'
+                  ? 'bg-red-50 border-red-300 border-l-4 border-l-red-500'
+                  : 'bg-white border-gray-200'
               }
             `}
           >
             {/* Título - Apenas Referência Interna */}
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-lg font-bold text-gray-900 leading-tight">{producao.referenciaInterna}</h3>
-              <div className="flex flex-col space-y-1">
-                <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(producao.etapa)}`}>
-                  {producao.etapa}
-                </span>
-                <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEstadoColor(producao.estado)}`}>
-                  {producao.estado}
-                </span>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">{producao.referenciaInterna}</h3>
+                <div className="space-y-1">
+                  <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(producao.etapa)}`}>
+                    {producao.etapa}
+                  </span>
+                  <br />
+                  <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEstadoColor(producao.estado)}`}>
+                    {producao.estado}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -190,7 +195,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
                 </div>
                 <div>
                   <span className="text-gray-500">Entrega:</span>
-                  <span className={`ml-1 font-bold ${isUrgent(producao.dataEstimadaEntrega) ? 'text-red-700' : 'text-gray-900'}`}>
+                  <span className="ml-1 font-bold text-red-700">
                     {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
                   </span>
                 </div>
