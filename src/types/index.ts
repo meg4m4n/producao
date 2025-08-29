@@ -1,12 +1,5 @@
 export type PageType = 'producoes' | 'registos' | 'config';
 
-export interface Marca {
-  id: string;
-  nome: string;
-  clienteId: string;
-  clienteNome: string;
-}
-
 export type Etapa = 
   | 'Desenvolvimento'
   | '1º proto'

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Edit, Trash2, Package, Calendar, User, Hash, FileText, Search, Filter, MapPin, Building, Eye } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
-import { etapas, estados } from '../data/constants';
+import { etapas, estados } from '../data/mockData';
 import ProducaoDetailsModal from './ProducaoDetailsModal';
 
 interface ProducoesListProps {
@@ -9,15 +9,13 @@ interface ProducoesListProps {
   onEdit?: (producao: Producao) => void;
   onDelete?: (id: string) => void;
   showActions?: boolean;
-  onUpdate?: () => void;
 }
 
 const ProducoesList: React.FC<ProducoesListProps> = ({ 
   producoes, 
   onEdit, 
   onDelete, 
-  showActions = false,
-  onUpdate
+  showActions = false 
 }) => {
   const [filtroEtapa, setFiltroEtapa] = useState<Etapa | 'all'>('all');
   const [filtroEstado, setFiltroEstado] = useState<Estado | 'all'>('all');
@@ -141,12 +139,12 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
       </div>
 
       {/* Lista de Produções */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {producoesFiltradas.map((producao) => (
           <div 
             key={producao.id} 
             className={`
-              rounded-lg border p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
+              rounded-lg border p-6 hover:shadow-md transition-all duration-200 relative overflow-hidden
               ${isUrgent(producao.dataEstimadaEntrega) 
                 ? 'bg-red-50 border-red-200' 
                 : 'bg-white border-gray-200'
@@ -154,9 +152,9 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             `}
           >
             {/* Título - Apenas Referência Interna */}
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="text-lg font-bold text-gray-900">{producao.referenciaInterna}</h3>
-              <div className="flex flex-col space-y-1 text-right">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">{producao.referenciaInterna}</h3>
+              <div className="flex flex-col space-y-1">
                 <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getEtapaColor(producao.etapa)}`}>
                   {producao.etapa}
                 </span>
@@ -167,21 +165,21 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             </div>
 
             {/* Informações Principais (texto menor) */}
-            <div className="space-y-1 text-sm text-gray-600 mb-4">
-              <p className="font-medium text-gray-900 text-sm leading-tight">{producao.descricao}</p>
+            <div className="space-y-2 text-sm text-gray-600 mb-4">
+              <p className="font-medium text-gray-900">{producao.descricao}</p>
               
-              <div className="grid grid-cols-1 gap-1">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <span className="text-gray-500">Tamanhos:</span>
                   <span className="ml-1 text-gray-900">{getTamanhosResumo(producao)}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Qtd Total:</span>
-                  <span className="ml-1 font-bold text-blue-600">{getQuantidadeTotal(producao)} un</span>
+                  <span className="ml-1 font-bold text-blue-600">{getQuantidadeTotal(producao)}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-1">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <span className="text-gray-500">Início:</span>
                   <span className="ml-1 text-gray-900">
@@ -190,48 +188,49 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
                 </div>
                 <div>
                   <span className="text-gray-500">Entrega:</span>
-                  <span className={`ml-1 font-bold ${isUrgent(producao.dataEstimadaEntrega) ? 'text-red-700' : 'text-gray-900'}`}>
+                  <span className={`ml-1 ${isUrgent(producao.dataEstimadaEntrega) ? 'text-red-700 font-bold' : 'text-gray-900'}`}>
                     {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1 text-xs">
+              <div className="flex items-center space-x-1">
                 {producao.localProducao === 'Interno' ? (
-                  <Building className="w-3 h-3 text-blue-600" />
+                  <Building className="w-4 h-4 text-blue-600" />
                 ) : (
-                  <MapPin className="w-3 h-3 text-orange-600" />
+                  <MapPin className="w-4 h-4 text-orange-600" />
                 )}
                 <span className="text-gray-500">Local:</span>
-                <span className="text-gray-900 truncate">
-                  {producao.localProducao === 'Externo' && producao.empresaExterna ? 'Famalicão' : 'Interno'}
+                <span className="text-gray-900">
+                  {producao.localProducao}
+                  {producao.empresaExterna && ` - ${producao.empresaExterna}`}
                 </span>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200">
               <button
                 onClick={() => setDetailsModal({ isOpen: true, producao })}
-                className="flex items-center space-x-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               >
-                <Eye className="w-3 h-3" />
-                <span className="text-xs font-medium">Detalhes</span>
+                <Eye className="w-4 h-4" />
+                <span className="text-sm font-medium">Ver Detalhes</span>
               </button>
               
               {showActions && (
                 <div className="flex space-x-2">
                   <button
                     onClick={() => onEdit?.(producao)}
-                    className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                   >
-                    <Edit className="w-3 h-3" />
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => onDelete?.(producao.id)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -239,7 +238,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
 
             {/* Status Bar */}
             <div className={`
-              absolute bottom-0 left-0 right-0 py-1 px-2 text-center text-xs font-bold tracking-wide
+              absolute bottom-0 left-0 right-0 py-1 px-4 text-center text-xs font-bold tracking-wide
               ${producao.emProducao 
                 ? 'bg-green-600 text-white' 
                 : 'bg-gray-400 text-white'
@@ -247,9 +246,6 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             `}>
               {producao.emProducao ? 'EM PRODUÇÃO' : 'PARADO'}
             </div>
-
-            {/* Padding para status bar */}
-            <div className="h-6"></div>
           </div>
         ))}
       </div>

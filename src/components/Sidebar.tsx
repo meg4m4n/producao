@@ -1,5 +1,5 @@
 import React from 'react';
-import { Factory, FileText, Menu, X } from 'lucide-react';
+import { Factory, FileText, Settings, Menu, X, Database } from 'lucide-react';
 import { PageType } from '../types';
 
 interface SidebarProps {
@@ -13,15 +13,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
   const menuItems = [
     { 
       id: 'producoes' as PageType, 
-      label: 'Dashboard', 
+      label: 'Produções', 
       icon: Factory,
-      description: 'Visão geral'
+      description: 'Gestão de produções'
     },
     { 
       id: 'registos' as PageType, 
       label: 'Registos', 
       icon: FileText,
-      description: 'CRUD completo'
+      description: 'Gestão de dados'
+    },
+    { 
+      id: 'config' as PageType, 
+      label: 'Configuração', 
+      icon: Database,
+      description: 'Base de dados'
     },
   ];
 

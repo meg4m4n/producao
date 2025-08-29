@@ -1,27 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { etapas } from '../data/constants';
+import { mockProducoes, etapas } from '../data/mockData';
 import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
-import { getProducoes } from '../services/api';
 
 const Producoes: React.FC = () => {
-  const [producoes, setProducoes] = useState<Producao[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducoes = async () => {
-      try {
-        const data = await getProducoes();
-        setProducoes(data);
-      } catch (error) {
-        console.error('Error fetching producoes:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducoes();
-  }, []);
+  const [producoes] = useState(mockProducoes);
 
   const getEtapaColor = (etapa: Etapa): string => {
     const colors = {
@@ -72,17 +56,6 @@ const Producoes: React.FC = () => {
       return new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime();
     });
   }, [producoes]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">A carregar produções...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

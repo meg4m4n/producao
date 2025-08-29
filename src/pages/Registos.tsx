@@ -1,36 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Package, Activity, Users, Building } from 'lucide-react';
-import { etapas, estados } from '../data/constants';
+import { etapas, estados, mockProducoes, clientes } from '../data/mockData';
+import EditModal from '../components/EditModal';
 import ProducaoForm from '../components/ProducaoForm';
 import ProducoesList from '../components/ProducoesList';
 import ClienteForm from '../components/ClienteForm';
-import MarcaForm from '../components/MarcaForm';
-import { Producao, Cliente, Marca } from '../types';
-import { 
-  getClientes, 
-  createCliente, 
-  updateCliente, 
-  deleteCliente,
-  getMarcas,
-  createMarca,
-  updateMarca,
-  deleteMarca,
-  getProducoes,
-  createProducao,
-  updateProducao,
-  deleteProducao
-} from '../services/api';
+import { Producao, Cliente } from '../types';
 
-type GestaoTab = 'producoes' | 'clientes' | 'marcas';
+type GestaoTab = 'producoes' | 'clientes' | 'etapas' | 'estados';
 
 const Registos: React.FC = () => {
   const [activeTab, setActiveTab] = useState<GestaoTab>('producoes');
-  const [clientesState, setClientesState] = useState<Cliente[]>([]);
-  const [marcasState, setMarcasState] = useState<Marca[]>([]);
-  const [producoesState, setProducoesState] = useState<Producao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [clientesState, setClientesState] = useState(clientes);
+  const [etapasState, setEtapasState] = useState(etapas);
+  const [estadosState, setEstadosState] = useState(estados);
+  const [producoesState, setProducoesState] = useState(mockProducoes);
   
   // Modal states
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    type: 'etapa' | 'estado' | 'new';
+    item?: any;
+    index?: number;
+  }>({ isOpen: false, type: 'etapa' });
 
   const [producaoForm, setProducaoForm] = useState<{
     isOpen: boolean;
@@ -42,161 +34,89 @@ const Registos: React.FC = () => {
     cliente?: Cliente;
   }>({ isOpen: false });
 
-  const [marcaForm, setMarcaForm] = useState<{
-    isOpen: boolean;
-    marca?: Marca;
-  }>({ isOpen: false });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [clientesData, marcasData, producoesData] = await Promise.all([
-          getClientes(),
-          getMarcas(),
-          getProducoes()
-        ]);
-        setClientesState(clientesData);
-        setMarcasState(marcasData);
-        setProducoesState(producoesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreateProducao = (novaProducao: Omit<Producao, 'id'>) => {
+    const producao: Producao = {
+      ...novaProducao,
+      id: Date.now().toString()
     };
-    fetchData();
-  }, []);
-
-  const handleCreateProducao = async (novaProducao: Omit<Producao, 'id'>) => {
-    try {
-      const producao = await createProducao(novaProducao);
-      setProducoesState(prev => [...prev, producao]);
-    } catch (error) {
-      console.error('Error creating producao:', error);
-      alert('Erro ao criar produção');
-    }
+    setProducoesState(prev => [...prev, producao]);
   };
 
-  const handleUpdateProducao = async (producaoAtualizada: Producao) => {
-    try {
-      await updateProducao(producaoAtualizada.id, producaoAtualizada);
-      setProducoesState(prev => prev.map(p => 
-        p.id === producaoAtualizada.id ? producaoAtualizada : p
-      ));
-    } catch (error) {
-      console.error('Error updating producao:', error);
-      alert('Erro ao atualizar produção');
-    }
+  const handleUpdateProducao = (producaoAtualizada: Producao) => {
+    setProducoesState(prev => prev.map(p => 
+      p.id === producaoAtualizada.id ? producaoAtualizada : p
+    ));
   };
 
-  const handleDeleteProducao = async (id: string) => {
+  const handleDeleteProducao = (id: string) => {
     if (confirm('Tem certeza que deseja remover esta produção?')) {
-      try {
-        await deleteProducao(id);
-        setProducoesState(prev => prev.filter(p => p.id !== id));
-      } catch (error) {
-        console.error('Error deleting producao:', error);
-        alert('Erro ao remover produção');
-      }
+      setProducoesState(prev => prev.filter(p => p.id !== id));
     }
   };
 
-  const handleSaveCliente = async (cliente: Omit<Cliente, 'id'>) => {
-    try {
-      if (clienteForm.cliente) {
-        // Editar cliente existente
-        const clienteAtualizado = await updateCliente(clienteForm.cliente.id, cliente);
-        setClientesState(prev => prev.map(c => 
-          c.id === clienteForm.cliente!.id ? clienteAtualizado : c
-        ));
-      } else {
-        // Criar novo cliente
-        const novoCliente = await createCliente(cliente);
-        setClientesState(prev => [...prev, novoCliente]);
-      }
-      setClienteForm({ isOpen: false });
-    } catch (error) {
-      console.error('Error saving cliente:', error);
-      alert('Erro ao guardar cliente');
+  const handleSaveCliente = (cliente: Omit<Cliente, 'id'>) => {
+    if (clienteForm.cliente) {
+      // Editar cliente existente
+      setClientesState(prev => prev.map(c => 
+        c.id === clienteForm.cliente!.id ? { ...cliente, id: clienteForm.cliente!.id } : c
+      ));
+    } else {
+      // Criar novo cliente
+      const novoCliente: Cliente = {
+        ...cliente,
+        id: Date.now().toString()
+      };
+      setClientesState(prev => [...prev, novoCliente]);
     }
+    setClienteForm({ isOpen: false });
   };
 
-  const handleDeleteCliente = async (id: string) => {
+  const handleDeleteCliente = (id: string) => {
     if (confirm('Tem certeza que deseja remover este cliente?')) {
-      try {
-        await deleteCliente(id);
-        setClientesState(prev => prev.filter(c => c.id !== id));
-        // Atualizar marcas também
-        setMarcasState(prev => prev.filter(m => m.clienteId !== id));
-      } catch (error) {
-        console.error('Error deleting cliente:', error);
-        alert('Erro ao remover cliente');
-      }
+      setClientesState(prev => prev.filter(c => c.id !== id));
     }
   };
 
-  const handleSaveMarca = async (marca: Omit<Marca, 'id' | 'clienteNome'>) => {
-    try {
-      if (marcaForm.marca) {
-        // Editar marca existente
-        const marcaAtualizada = await updateMarca(marcaForm.marca.id, marca);
-        setMarcasState(prev => prev.map(m => 
-          m.id === marcaForm.marca!.id ? marcaAtualizada : m
-        ));
-      } else {
-        // Criar nova marca
-        const novaMarca = await createMarca(marca);
-        setMarcasState(prev => [...prev, novaMarca]);
-      }
-      setMarcaForm({ isOpen: false });
-    } catch (error) {
-      console.error('Error saving marca:', error);
-      alert('Erro ao guardar marca');
+  const handleSaveEtapa = (nome: string) => {
+    if (editModal.type === 'new') {
+      setEtapasState(prev => [...prev, nome as any]);
+    } else if (editModal.index !== undefined) {
+      setEtapasState(prev => prev.map((etapa, idx) => 
+        idx === editModal.index ? nome as any : etapa
+      ));
     }
+    setEditModal({ isOpen: false, type: 'etapa' });
   };
 
-  const handleDeleteMarca = async (id: string) => {
-    if (confirm('Tem certeza que deseja remover esta marca?')) {
-      try {
-        await deleteMarca(id);
-        setMarcasState(prev => prev.filter(m => m.id !== id));
-      } catch (error) {
-        console.error('Error deleting marca:', error);
-        alert('Erro ao remover marca');
-      }
+  const handleSaveEstado = (nome: string) => {
+    if (editModal.type === 'new') {
+      setEstadosState(prev => [...prev, nome as any]);
+    } else if (editModal.index !== undefined) {
+      setEstadosState(prev => prev.map((estado, idx) => 
+        idx === editModal.index ? nome as any : estado
+      ));
     }
+    setEditModal({ isOpen: false, type: 'estado' });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">A carregar dados...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const refreshData = async () => {
-    try {
-      const [clientesData, marcasData, producoesData] = await Promise.all([
-        getClientes(),
-        getMarcas(),
-        getProducoes()
-      ]);
-      setClientesState(clientesData);
-      setMarcasState(marcasData);
-      setProducoesState(producoesData);
-    } catch (error) {
-      console.error('Error refreshing data:', error);
+  const handleDelete = (type: 'etapa' | 'estado', index: number) => {
+    if (confirm('Tem certeza que deseja remover este item?')) {
+      switch (type) {
+        case 'etapa':
+          setEtapasState(prev => prev.filter((_, idx) => idx !== index));
+          break;
+        case 'estado':
+          setEstadosState(prev => prev.filter((_, idx) => idx !== index));
+          break;
+      }
     }
   };
 
   const tabs = [
     { id: 'producoes' as GestaoTab, label: 'Produções', icon: Package },
     { id: 'clientes' as GestaoTab, label: 'Clientes', icon: Users },
-    { id: 'marcas' as GestaoTab, label: 'Marcas', icon: Building },
+    { id: 'etapas' as GestaoTab, label: 'Etapas', icon: Building },
+    { id: 'estados' as GestaoTab, label: 'Estados', icon: Activity },
   ];
 
   const renderProducoes = () => (
@@ -214,12 +134,9 @@ const Registos: React.FC = () => {
       
       <ProducoesList
         producoes={producoesState}
-        onEdit={(producao) => {
-          setProducaoForm({ isOpen: true, producao });
-        }}
+        onEdit={(producao) => setProducaoForm({ isOpen: true, producao })}
         onDelete={handleDeleteProducao}
         showActions={true}
-        onUpdate={refreshData}
       />
     </div>
   );
@@ -277,39 +194,90 @@ const Registos: React.FC = () => {
     </div>
   );
 
-  const renderMarcas = () => (
+  const renderEtapas = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Gestão de Marcas</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Etapas</h3>
         <button 
-          onClick={() => setMarcaForm({ isOpen: true })}
+          onClick={() => setEditModal({ isOpen: true, type: 'new' })}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Nova Marca</span>
+          <span>Nova Etapa</span>
         </button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {marcasState.map((marca) => (
-          <div key={marca.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {etapasState.map((etapa, index) => (
+          <div key={etapa} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <Building className="w-5 h-5 text-blue-600" />
-                <div>
-                  <span className="font-medium text-gray-900">{marca.nome}</span>
-                  <p className="text-sm text-gray-500">{marca.clienteNome}</p>
+                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                  {index + 1}
                 </div>
+                <span className="font-medium text-gray-900">{etapa}</span>
               </div>
               <div className="flex space-x-2">
                 <button 
-                  onClick={() => setMarcaForm({ isOpen: true, marca })}
+                  onClick={() => setEditModal({ 
+                    isOpen: true, 
+                    type: 'etapa', 
+                    item: etapa, 
+                    index 
+                  })}
                   className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => handleDeleteMarca(marca.id)}
+                  onClick={() => handleDelete('etapa', index)}
+                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderEstados = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Estados</h3>
+        <button 
+          onClick={() => setEditModal({ isOpen: true, type: 'new' })}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Novo Estado</span>
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {estadosState.map((estado, index) => (
+          <div key={estado} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <Activity className="w-5 h-5 text-green-600" />
+                <span className="font-medium text-gray-900 text-sm">{estado}</span>
+              </div>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setEditModal({ 
+                    isOpen: true, 
+                    type: 'estado', 
+                    item: estado, 
+                    index 
+                  })}
+                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => handleDelete('estado', index)}
                   className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -327,7 +295,7 @@ const Registos: React.FC = () => {
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Registos</h1>
-        <p className="text-gray-600">Gestão completa de produções, clientes e marcas</p>
+        <p className="text-gray-600">Gestão completa de produções, clientes, etapas e estados</p>
       </div>
 
       {/* Tabs */}
@@ -359,26 +327,32 @@ const Registos: React.FC = () => {
         <div className="p-6">
           {activeTab === 'producoes' && renderProducoes()}
           {activeTab === 'clientes' && renderClientes()}
-          {activeTab === 'marcas' && renderMarcas()}
+          {activeTab === 'etapas' && renderEtapas()}
+          {activeTab === 'estados' && renderEstados()}
         </div>
       </div>
+
+      {/* Modal de Edição */}
+      <EditModal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false, type: 'etapa' })}
+        onSave={
+          activeTab === 'etapas' ? handleSaveEtapa : handleSaveEstado
+        }
+        title={
+          editModal.type === 'new' ? `Nova ${activeTab.slice(0, -1)}` :
+          `Editar ${activeTab.slice(0, -1)}`
+        }
+        value={editModal.item || ''}
+        showColorPicker={false}
+      />
 
       {/* Modal de Produção */}
       <ProducaoForm
         isOpen={producaoForm.isOpen}
         onClose={() => setProducaoForm({ isOpen: false })}
-        onSave={async (producaoData) => {
-          if (producaoForm.producao) {
-            await handleUpdateProducao(producaoData as Producao);
-          } else {
-            await handleCreateProducao(producaoData);
-          }
-          setProducaoForm({ isOpen: false });
-          await refreshData();
-        }}
+        onSave={producaoForm.producao ? handleUpdateProducao : handleCreateProducao}
         producao={producaoForm.producao}
-        clientes={clientesState}
-        marcas={marcasState}
       />
 
       {/* Modal de Cliente */}
@@ -387,15 +361,6 @@ const Registos: React.FC = () => {
         onClose={() => setClienteForm({ isOpen: false })}
         onSave={handleSaveCliente}
         cliente={clienteForm.cliente}
-      />
-
-      {/* Modal de Marca */}
-      <MarcaForm
-        isOpen={marcaForm.isOpen}
-        onClose={() => setMarcaForm({ isOpen: false })}
-        onSave={handleSaveMarca}
-        marca={marcaForm.marca}
-        clientes={clientesState}
       />
     </div>
   );
