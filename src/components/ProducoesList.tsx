@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Edit, Trash2, Package, Calendar, User, Hash, FileText, Search, Filter, MapPin, Building } from 'lucide-react';
+import { Edit, Trash2, Package, Calendar, User, Hash, FileText, Search, Filter, MapPin, Building, Eye } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados } from '../data/mockData';
+import ProducaoDetailsModal from './ProducaoDetailsModal';
 
 interface ProducoesListProps {
   producoes: Producao[];
@@ -19,6 +20,10 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
   const [filtroEtapa, setFiltroEtapa] = useState<Etapa | 'all'>('all');
   const [filtroEstado, setFiltroEstado] = useState<Estado | 'all'>('all');
   const [busca, setBusca] = useState('');
+  const [detailsModal, setDetailsModal] = useState<{
+    isOpen: boolean;
+    producao: Producao | null;
+  }>({ isOpen: false, producao: null });
 
   const getEtapaColor = (etapa: Etapa): string => {
     const colors = {
@@ -56,6 +61,19 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
     const diffTime = entrega.getTime() - hoje.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3 && diffDays >= 0;
+  };
+
+  const getQuantidadeTotal = (producao: Producao): number => {
+    return producao.variantes.reduce((total, variante) => {
+      return total + Object.values(variante.tamanhos).reduce((sum, qty) => sum + qty, 0);
+    }, 0);
+  };
+
+  const getTamanhosResumo = (producao: Producao): string => {
+    const tamanhos = Array.from(
+      new Set(producao.variantes.flatMap(v => Object.keys(v.tamanhos)))
+    ).sort();
+    return tamanhos.join(', ');
   };
 
   const producoesFiltradas = useMemo(() => {
@@ -133,12 +151,9 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
               }
             `}
           >
-            {/* Header do card */}
+            {/* Título - Apenas Referência Interna */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <Package className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">{producao.marca}</h3>
-              </div>
+              <h3 className="text-xl font-bold text-gray-900">{producao.referenciaInterna}</h3>
               <div className="flex flex-col space-y-1">
                 <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getEtapaColor(producao.etapa)}`}>
                   {producao.etapa}
@@ -149,86 +164,62 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
               </div>
             </div>
 
-            {/* Detalhes */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <User className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-600">Cliente:</span>
-                <span className="text-sm font-medium text-gray-900">{producao.cliente}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center space-x-1">
-                  <Hash className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <div className="text-xs text-gray-500">Ref. Interna</div>
-                    <div className="text-sm font-medium text-gray-900">{producao.referenciaInterna}</div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Hash className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <div className="text-xs text-gray-500">Ref. Cliente</div>
-                    <div className="text-sm font-medium text-gray-900">{producao.referenciaCliente}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <FileText className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-600">{producao.descricao}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+            {/* Informações Principais (texto menor) */}
+            <div className="space-y-2 text-sm text-gray-600 mb-4">
+              <p className="font-medium text-gray-900">{producao.descricao}</p>
+              
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <div className="text-xs text-gray-500">Tipo / Género</div>
-                  <div className="text-sm font-medium text-gray-900">{producao.tipoPeca} • {producao.genero}</div>
+                  <span className="text-gray-500">Tamanhos:</span>
+                  <span className="ml-1 text-gray-900">{getTamanhosResumo(producao)}</span>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500">Tamanho • Qtd</div>
-                  <div className="text-sm font-medium text-gray-900">{producao.tamanho} • {producao.quantidade}un</div>
+                  <span className="text-gray-500">Qtd Total:</span>
+                  <span className="ml-1 font-bold text-blue-600">{getQuantidadeTotal(producao)}</span>
                 </div>
               </div>
 
-              {/* Datas */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <div className="text-xs text-gray-500">Início</div>
-                    <div className="text-xs font-medium text-gray-900">
-                      {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-gray-500">Início:</span>
+                  <span className="ml-1 text-gray-900">
+                    {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}
+                  </span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <div className="text-xs text-gray-500">Entrega</div>
-                    <div className={`text-xs font-medium ${isUrgent(producao.dataEstimadaEntrega) ? 'text-red-700' : 'text-gray-900'}`}>
-                      {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
-                    </div>
-                  </div>
+                <div>
+                  <span className="text-gray-500">Entrega:</span>
+                  <span className={`ml-1 ${isUrgent(producao.dataEstimadaEntrega) ? 'text-red-700 font-bold' : 'text-gray-900'}`}>
+                    {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+                  </span>
                 </div>
               </div>
 
-              {/* Local de Produção */}
-              <div className="flex items-center space-x-2 pt-2">
+              <div className="flex items-center space-x-1">
                 {producao.localProducao === 'Interno' ? (
                   <Building className="w-4 h-4 text-blue-600" />
                 ) : (
                   <MapPin className="w-4 h-4 text-orange-600" />
                 )}
-                <span className="text-xs text-gray-500">Local:</span>
-                <span className="text-xs font-medium text-gray-900">
+                <span className="text-gray-500">Local:</span>
+                <span className="text-gray-900">
                   {producao.localProducao}
                   {producao.empresaExterna && ` - ${producao.empresaExterna}`}
                 </span>
               </div>
+            </div>
 
-              {/* Actions */}
+            {/* Actions */}
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+              <button
+                onClick={() => setDetailsModal({ isOpen: true, producao })}
+                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="text-sm font-medium">Ver Detalhes</span>
+              </button>
+              
               {showActions && (
-                <div className="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                <div className="flex space-x-2">
                   <button
                     onClick={() => onEdit?.(producao)}
                     className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
@@ -247,7 +238,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
 
             {/* Status Bar */}
             <div className={`
-              absolute bottom-0 left-0 right-0 py-2 px-4 text-center text-xs font-bold tracking-wide
+              absolute bottom-0 left-0 right-0 py-1 px-4 text-center text-xs font-bold tracking-wide
               ${producao.emProducao 
                 ? 'bg-green-600 text-white' 
                 : 'bg-gray-400 text-white'
@@ -265,6 +256,13 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
           <p className="text-gray-500">Nenhuma produção encontrada</p>
         </div>
       )}
+
+      {/* Modal de Detalhes */}
+      <ProducaoDetailsModal
+        isOpen={detailsModal.isOpen}
+        onClose={() => setDetailsModal({ isOpen: false, producao: null })}
+        producao={detailsModal.producao}
+      />
     </div>
   );
 };

@@ -1,23 +1,4 @@
-export interface Producao {
-  id: string;
-  marca: string;
-  cliente: string;
-  referenciaInterna: string;
-  referenciaCliente: string;
-  descricao: string;
-  tipoPeca: string;
-  genero: 'Masculino' | 'Feminino' | 'Unissexo';
-  tamanho: string;
-  quantidade: number;
-  etapa: Etapa;
-  estado: Estado;
-  dataInicio: string;
-  dataPrevisao: string;
-  dataEstimadaEntrega: string;
-  emProducao: boolean;
-  localProducao: 'Interno' | 'Externo';
-  empresaExterna?: string;
-}
+export type PageType = 'producoes' | 'registos' | 'config';
 
 export type Etapa = 
   | 'Desenvolvimento'
@@ -41,17 +22,36 @@ export type Estado =
   | 'Serviços Externos'
   | 'Embalamento';
 
-export interface Categoria {
+export interface Cliente {
   id: string;
   nome: string;
+  marcas: string[];
+}
+
+export interface VarianteProducao {
   cor: string;
+  tamanhos: {
+    [tamanho: string]: number; // tamanho -> quantidade
+  };
 }
 
-export interface ConfigBD {
-  host: string;
-  user: string;
-  password: string;
-  dbName: string;
+export interface Producao {
+  id: string;
+  marca: string;
+  cliente: string;
+  referenciaInterna: string;
+  referenciaCliente: string;
+  descricao: string;
+  tipoPeca: string;
+  genero: 'Masculino' | 'Feminino' | 'Unissexo';
+  variantes: VarianteProducao[];
+  etapa: Etapa;
+  estado: Estado;
+  dataInicio: string;
+  dataPrevisao: string;
+  dataEstimadaEntrega: string;
+  emProducao: boolean;
+  localProducao: 'Interno' | 'Externo';
+  empresaExterna?: string;
+  linkOdoo?: string;
 }
-
-export type PageType = 'producoes' | 'registos' | 'config';

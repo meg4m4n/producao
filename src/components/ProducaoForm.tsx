@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Save, Package } from 'lucide-react';
-import { Producao, Etapa, Estado } from '../types';
-import { etapas, estados } from '../data/mockData';
+import { X, Save, Package, Plus, Trash2 } from 'lucide-react';
+import { Producao, Etapa, Estado, VarianteProducao } from '../types';
+import { etapas, estados, clientes } from '../data/mockData';
 
 interface ProducaoFormProps {
   isOpen: boolean;
@@ -19,8 +19,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     descricao: producao?.descricao || '',
     tipoPeca: producao?.tipoPeca || '',
     genero: producao?.genero || 'Unissexo' as const,
-    tamanho: producao?.tamanho || '',
-    quantidade: producao?.quantidade || 0,
+    variantes: producao?.variantes || [{ cor: '', tamanhos: {} }] as VarianteProducao[],
     etapa: producao?.etapa || 'Desenvolvimento' as Etapa,
     estado: producao?.estado || 'Modelagem' as Estado,
     dataInicio: producao?.dataInicio || new Date().toISOString().split('T')[0],
@@ -28,8 +27,12 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     dataEstimadaEntrega: producao?.dataEstimadaEntrega || '',
     emProducao: producao?.emProducao || false,
     localProducao: producao?.localProducao || 'Interno' as const,
-    empresaExterna: producao?.empresaExterna || ''
+    empresaExterna: producao?.empresaExterna || '',
+    linkOdoo: producao?.linkOdoo || ''
   });
+
+  const clienteSelecionado = clientes.find(c => c.nome === formData.cliente);
+  const marcasDisponiveis = clienteSelecionado?.marcas || [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +47,59 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleClienteChange = (cliente: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      cliente,
+      marca: '' // Reset marca quando cliente muda
+    }));
+  };
+
+  const addVariante = () => {
+    setFormData(prev => ({
+      ...prev,
+      variantes: [...prev.variantes, { cor: '', tamanhos: {} }]
+    }));
+  };
+
+  const removeVariante = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      variantes: prev.variantes.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateVariante = (index: number, field: keyof VarianteProducao, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      variantes: prev.variantes.map((v, i) => 
+        i === index ? { ...v, [field]: value } : v
+      )
+    }));
+  };
+
+  const updateTamanho = (varianteIndex: number, tamanho: string, quantidade: number) => {
+    setFormData(prev => ({
+      ...prev,
+      variantes: prev.variantes.map((v, i) => 
+        i === varianteIndex 
+          ? { 
+              ...v, 
+              tamanhos: { 
+                ...v.tamanhos, 
+                [tamanho]: quantidade || 0 
+              } 
+            } 
+          : v
+      )
+    }));
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -67,29 +118,39 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Informações Básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cliente */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+              <select
+                value={formData.cliente}
+                onChange={(e) => handleClienteChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="">Selecionar cliente</option>
+                {clientes.map(cliente => (
+                  <option key={cliente.id} value={cliente.nome}>{cliente.nome}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Marca */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Marca</label>
-              <input
-                type="text"
+              <select
                 value={formData.marca}
                 onChange={(e) => handleChange('marca', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
-              />
-            </div>
-
-            {/* Cliente */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
-              <input
-                type="text"
-                value={formData.cliente}
-                onChange={(e) => handleChange('cliente', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
+                disabled={!formData.cliente}
+              >
+                <option value="">Selecionar marca</option>
+                {marcasDisponiveis.map(marca => (
+                  <option key={marca} value={marca}>{marca}</option>
+                ))}
+              </select>
             </div>
 
             {/* Referência Interna */}
@@ -141,33 +202,85 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 <option value="Unissexo">Unissexo</option>
               </select>
             </div>
+          </div>
 
-            {/* Tamanho */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tamanho</label>
-              <input
-                type="text"
-                value={formData.tamanho}
-                onChange={(e) => handleChange('tamanho', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
+          {/* Descrição */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+            <textarea
+              value={formData.descricao}
+              onChange={(e) => handleChange('descricao', e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+
+          {/* Variantes (Cores e Tamanhos) */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700">Variantes (Cores e Tamanhos)</label>
+              <button
+                type="button"
+                onClick={addVariante}
+                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm">Adicionar Cor</span>
+              </button>
             </div>
-
-            {/* Quantidade */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quantidade</label>
-              <input
-                type="number"
-                value={formData.quantidade}
-                onChange={(e) => handleChange('quantidade', parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                min="1"
-                required
-              />
+            
+            <div className="space-y-4">
+              {formData.variantes.map((variante, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-900">Variante {index + 1}</h4>
+                    {formData.variantes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVariante(index)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Cor</label>
+                      <input
+                        type="text"
+                        value={variante.cor}
+                        onChange={(e) => updateVariante(index, 'cor', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Ex: Preto, Branco..."
+                        required
+                      />
+                    </div>
+                    
+                    {/* Tamanhos */}
+                    {['XS', 'S', 'M', 'L', 'XL'].map(tamanho => (
+                      <div key={tamanho}>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">{tamanho}</label>
+                        <input
+                          type="number"
+                          value={variante.tamanhos[tamanho] || ''}
+                          onChange={(e) => updateTamanho(index, tamanho, parseInt(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          min="0"
+                          placeholder="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Etapa */}
+          {/* Datas e Status */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Etapa</label>
               <select
@@ -181,7 +294,6 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               </select>
             </div>
 
-            {/* Estado */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
               <select
@@ -195,44 +307,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               </select>
             </div>
 
-            {/* Data Início */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data de Início</label>
-              <input
-                type="date"
-                value={formData.dataInicio}
-                onChange={(e) => handleChange('dataInicio', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            {/* Data Previsão */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data de Previsão</label>
-              <input
-                type="date"
-                value={formData.dataPrevisao}
-                onChange={(e) => handleChange('dataPrevisao', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            {/* Data Estimada de Entrega */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data Estimada de Entrega</label>
-              <input
-                type="date"
-                value={formData.dataEstimadaEntrega}
-                onChange={(e) => handleChange('dataEstimadaEntrega', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            {/* Em Produção */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 pt-6">
               <input
                 type="checkbox"
                 id="emProducao"
@@ -244,8 +319,46 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 Em Produção
               </label>
             </div>
+          </div>
 
-            {/* Local de Produção */}
+          {/* Datas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Data de Início</label>
+              <input
+                type="date"
+                value={formData.dataInicio}
+                onChange={(e) => handleChange('dataInicio', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Data de Previsão</label>
+              <input
+                type="date"
+                value={formData.dataPrevisao}
+                onChange={(e) => handleChange('dataPrevisao', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Data Estimada de Entrega</label>
+              <input
+                type="date"
+                value={formData.dataEstimadaEntrega}
+                onChange={(e) => handleChange('dataEstimadaEntrega', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Local de Produção */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Local de Produção</label>
               <select
@@ -257,32 +370,31 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 <option value="Externo">Externo</option>
               </select>
             </div>
+
+            {formData.localProducao === 'Externo' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa Externa</label>
+                <input
+                  type="text"
+                  value={formData.empresaExterna}
+                  onChange={(e) => handleChange('empresaExterna', e.target.value)}
+                  placeholder="Nome da empresa externa"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required={formData.localProducao === 'Externo'}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Empresa Externa (condicional) */}
-          {formData.localProducao === 'Externo' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Empresa Externa</label>
-              <input
-                type="text"
-                value={formData.empresaExterna}
-                onChange={(e) => handleChange('empresaExterna', e.target.value)}
-                placeholder="Nome da empresa externa"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required={formData.localProducao === 'Externo'}
-              />
-            </div>
-          )}
-
-          {/* Descrição */}
+          {/* Link do Odoo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
-            <textarea
-              value={formData.descricao}
-              onChange={(e) => handleChange('descricao', e.target.value)}
-              rows={3}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Link do Odoo (opcional)</label>
+            <input
+              type="url"
+              value={formData.linkOdoo}
+              onChange={(e) => handleChange('linkOdoo', e.target.value)}
+              placeholder="https://odoo.example.com/production/..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
             />
           </div>
 
