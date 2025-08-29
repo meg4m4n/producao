@@ -13,6 +13,10 @@ export interface Producao {
   estado: Estado;
   dataInicio: string;
   dataPrevisao: string;
+  dataEstimadaEntrega: string;
+  emProducao: boolean;
+  localProducao: 'Interno' | 'Externo';
+  empresaExterna?: string;
 }
 
 export type Etapa = 

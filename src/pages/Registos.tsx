@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Package, Tag, Activity } from 'lucide-react';
-import { categorias, etapas, estados } from '../data/mockData';
+import { Plus, Edit, Trash2, Package, Tag, Activity, Factory } from 'lucide-react';
+import { categorias, etapas, estados, mockProducoes } from '../data/mockData';
 import EditModal from '../components/EditModal';
-import { Categoria } from '../types';
+import ProducaoForm from '../components/ProducaoForm';
+import ProducoesList from '../components/ProducoesList';
+import { Categoria, Producao } from '../types';
 
-type GestaoTab = 'categorias' | 'etapas' | 'estados';
+type GestaoTab = 'producoes' | 'categorias' | 'etapas' | 'estados';
 
 const Registos: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<GestaoTab>('categorias');
+  const [activeTab, setActiveTab] = useState<GestaoTab>('producoes');
   const [categoriasState, setCategoriasState] = useState(categorias);
   const [etapasState, setEtapasState] = useState(etapas);
   const [estadosState, setEstadosState] = useState(estados);
+  const [producoesState, setProducoesState] = useState(mockProducoes);
   
   // Modal states
   const [editModal, setEditModal] = useState<{
@@ -19,6 +22,31 @@ const Registos: React.FC = () => {
     item?: any;
     index?: number;
   }>({ isOpen: false, type: 'categoria' });
+
+  const [producaoForm, setProducaoForm] = useState<{
+    isOpen: boolean;
+    producao?: Producao;
+  }>({ isOpen: false });
+
+  const handleCreateProducao = (novaProducao: Omit<Producao, 'id'>) => {
+    const producao: Producao = {
+      ...novaProducao,
+      id: Date.now().toString()
+    };
+    setProducoesState(prev => [...prev, producao]);
+  };
+
+  const handleUpdateProducao = (producaoAtualizada: Producao) => {
+    setProducoesState(prev => prev.map(p => 
+      p.id === producaoAtualizada.id ? producaoAtualizada : p
+    ));
+  };
+
+  const handleDeleteProducao = (id: string) => {
+    if (confirm('Tem certeza que deseja remover esta produção?')) {
+      setProducoesState(prev => prev.filter(p => p.id !== id));
+    }
+  };
 
   const handleSaveCategoria = (nome: string, cor?: string) => {
     if (editModal.type === 'new') {
@@ -75,10 +103,33 @@ const Registos: React.FC = () => {
   };
 
   const tabs = [
+    { id: 'producoes' as GestaoTab, label: 'Produções', icon: Factory },
     { id: 'categorias' as GestaoTab, label: 'Categorias', icon: Tag },
     { id: 'etapas' as GestaoTab, label: 'Etapas', icon: Package },
     { id: 'estados' as GestaoTab, label: 'Estados', icon: Activity },
   ];
+
+  const renderProducoes = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Produções</h3>
+        <button 
+          onClick={() => setProducaoForm({ isOpen: true })}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Nova Produção</span>
+        </button>
+      </div>
+      
+      <ProducoesList
+        producoes={producoesState}
+        onEdit={(producao) => setProducaoForm({ isOpen: true, producao })}
+        onDelete={handleDeleteProducao}
+        showActions={true}
+      />
+    </div>
+  );
 
   const renderCategorias = () => (
     <div className="space-y-4">
@@ -231,7 +282,7 @@ const Registos: React.FC = () => {
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Registos</h1>
-        <p className="text-gray-600">Gestão de categorias, etapas e estados do sistema</p>
+        <p className="text-gray-600">Gestão completa de produções, categorias, etapas e estados</p>
       </div>
 
       {/* Tabs */}
@@ -261,6 +312,7 @@ const Registos: React.FC = () => {
         </div>
         
         <div className="p-6">
+          {activeTab === 'producoes' && renderProducoes()}
           {activeTab === 'categorias' && renderCategorias()}
           {activeTab === 'etapas' && renderEtapas()}
           {activeTab === 'estados' && renderEstados()}
@@ -283,6 +335,14 @@ const Registos: React.FC = () => {
         value={editModal.item || ''}
         color={editModal.item?.cor}
         showColorPicker={activeTab === 'categorias'}
+      />
+
+      {/* Modal de Produção */}
+      <ProducaoForm
+        isOpen={producaoForm.isOpen}
+        onClose={() => setProducaoForm({ isOpen: false })}
+        onSave={producaoForm.producao ? handleUpdateProducao : handleCreateProducao}
+        producao={producaoForm.producao}
       />
     </div>
   );

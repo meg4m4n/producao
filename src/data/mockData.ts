@@ -47,7 +47,10 @@ export const mockProducoes: Producao[] = [
     etapa: 'Desenvolvimento',
     estado: 'Modelagem',
     dataInicio: '2025-01-15',
-    dataPrevisao: '2025-02-28'
+    dataPrevisao: '2025-02-28',
+    dataEstimadaEntrega: '2025-03-05',
+    emProducao: true,
+    localProducao: 'Interno'
   },
   {
     id: '2',
@@ -63,7 +66,11 @@ export const mockProducoes: Producao[] = [
     etapa: '1º proto',
     estado: 'Aguarda Componentes',
     dataInicio: '2025-01-10',
-    dataPrevisao: '2025-03-15'
+    dataPrevisao: '2025-03-15',
+    dataEstimadaEntrega: '2025-03-20',
+    emProducao: true,
+    localProducao: 'Externo',
+    empresaExterna: 'TextilPro Lda'
   },
   {
     id: '3',
@@ -79,7 +86,10 @@ export const mockProducoes: Producao[] = [
     etapa: '2º proto',
     estado: 'Confecção',
     dataInicio: '2025-01-05',
-    dataPrevisao: '2025-02-20'
+    dataPrevisao: '2025-02-20',
+    dataEstimadaEntrega: '2025-02-25',
+    emProducao: true,
+    localProducao: 'Interno'
   },
   {
     id: '4',
@@ -95,7 +105,11 @@ export const mockProducoes: Producao[] = [
     etapa: 'PPS',
     estado: 'Transfers',
     dataInicio: '2025-01-01',
-    dataPrevisao: '2025-03-01'
+    dataPrevisao: '2025-03-01',
+    dataEstimadaEntrega: '2025-01-28',
+    emProducao: false,
+    localProducao: 'Externo',
+    empresaExterna: 'Fashion Works'
   },
   {
     id: '5',
@@ -111,7 +125,10 @@ export const mockProducoes: Producao[] = [
     etapa: 'Produção',
     estado: 'Embalamento',
     dataInicio: '2024-12-20',
-    dataPrevisao: '2025-02-10'
+    dataPrevisao: '2025-02-10',
+    dataEstimadaEntrega: '2025-02-15',
+    emProducao: true,
+    localProducao: 'Interno'
   },
   {
     id: '6',
@@ -127,7 +144,10 @@ export const mockProducoes: Producao[] = [
     etapa: 'Pronto',
     estado: 'Embalamento',
     dataInicio: '2024-12-15',
-    dataPrevisao: '2025-01-30'
+    dataPrevisao: '2025-01-30',
+    dataEstimadaEntrega: '2025-01-30',
+    emProducao: false,
+    localProducao: 'Interno'
   },
   {
     id: '7',
@@ -143,7 +163,10 @@ export const mockProducoes: Producao[] = [
     etapa: 'Enviado',
     estado: 'Embalamento',
     dataInicio: '2024-12-01',
-    dataPrevisao: '2025-01-15'
+    dataPrevisao: '2025-01-15',
+    dataEstimadaEntrega: '2025-01-15',
+    emProducao: false,
+    localProducao: 'Interno'
   },
   {
     id: '8',
@@ -159,6 +182,10 @@ export const mockProducoes: Producao[] = [
     etapa: 'Size-Set',
     estado: 'Aguarda Comentários',
     dataInicio: '2025-01-12',
-    dataPrevisao: '2025-03-05'
+    dataPrevisao: '2025-03-05',
+    dataEstimadaEntrega: '2025-01-27',
+    emProducao: true,
+    localProducao: 'Externo',
+    empresaExterna: 'Premium Textiles'
   }
 ];

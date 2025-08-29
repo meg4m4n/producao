@@ -24,12 +24,19 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     etapa: producao?.etapa || 'Desenvolvimento' as Etapa,
     estado: producao?.estado || 'Modelagem' as Estado,
     dataInicio: producao?.dataInicio || new Date().toISOString().split('T')[0],
-    dataPrevisao: producao?.dataPrevisao || ''
+    dataPrevisao: producao?.dataPrevisao || '',
+    dataEstimadaEntrega: producao?.dataEstimadaEntrega || '',
+    emProducao: producao?.emProducao || false,
+    localProducao: producao?.localProducao || 'Interno' as const,
+    empresaExterna: producao?.empresaExterna || ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const producaoData = producao 
+      ? { ...formData, id: producao.id } as Producao
+      : formData;
+    onSave(producaoData);
     onClose();
   };
 
@@ -211,7 +218,61 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 required
               />
             </div>
+
+            {/* Data Estimada de Entrega */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Data Estimada de Entrega</label>
+              <input
+                type="date"
+                value={formData.dataEstimadaEntrega}
+                onChange={(e) => handleChange('dataEstimadaEntrega', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            {/* Em Produção */}
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="emProducao"
+                checked={formData.emProducao}
+                onChange={(e) => handleChange('emProducao', e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="emProducao" className="text-sm font-medium text-gray-700">
+                Em Produção
+              </label>
+            </div>
+
+            {/* Local de Produção */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Local de Produção</label>
+              <select
+                value={formData.localProducao}
+                onChange={(e) => handleChange('localProducao', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Interno">Interno</option>
+                <option value="Externo">Externo</option>
+              </select>
+            </div>
           </div>
+
+          {/* Empresa Externa (condicional) */}
+          {formData.localProducao === 'Externo' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Empresa Externa</label>
+              <input
+                type="text"
+                value={formData.empresaExterna}
+                onChange={(e) => handleChange('empresaExterna', e.target.value)}
+                placeholder="Nome da empresa externa"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required={formData.localProducao === 'Externo'}
+              />
+            </div>
+          )}
 
           {/* Descrição */}
           <div>
