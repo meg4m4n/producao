@@ -11,6 +11,20 @@ interface ProducaoFormProps {
 }
 
 const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, producao }) => {
+  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>(() => {
+    // Inicializar com tamanhos padrão e tamanhos existentes da produção
+    const tamanhosBase = ['XS', 'S', 'M', 'L', 'XL'];
+    if (producao) {
+      const tamanhosExistentes = Array.from(
+        new Set(producao.variantes.flatMap(v => Object.keys(v.tamanhos)))
+      );
+      return Array.from(new Set([...tamanhosBase, ...tamanhosExistentes])).sort();
+    }
+    return tamanhosBase;
+  });
+  
+  const [novoTamanho, setNovoTamanho] = useState('');
+
   const [formData, setFormData] = useState({
     marca: producao?.marca || '',
     cliente: producao?.cliente || '',
@@ -92,6 +106,37 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
             } 
           : v
       )
+    }));
+  };
+
+  const adicionarTamanho = () => {
+    if (novoTamanho.trim() && !tamanhosDisponiveis.includes(novoTamanho.trim().toUpperCase())) {
+      const tamanhoFormatado = novoTamanho.trim().toUpperCase();
+      setTamanhosDisponiveis(prev => [...prev, tamanhoFormatado].sort());
+      setNovoTamanho('');
+    }
+  };
+
+  const removerTamanho = (tamanho: string) => {
+    // Verificar se o tamanho está sendo usado em alguma variante
+    const tamanhoEmUso = formData.variantes.some(v => 
+      v.tamanhos[tamanho] && v.tamanhos[tamanho] > 0
+    );
+    
+    if (tamanhoEmUso) {
+      if (!confirm(`O tamanho ${tamanho} está sendo usado. Remover mesmo assim?`)) {
+        return;
+      }
+    }
+    
+    setTamanhosDisponiveis(prev => prev.filter(t => t !== tamanho));
+    // Remover o tamanho de todas as variantes
+    setFormData(prev => ({
+      ...prev,
+      variantes: prev.variantes.map(v => {
+        const { [tamanho]: removed, ...restTamanhos } = v.tamanhos;
+        return { ...v, tamanhos: restTamanhos };
+      })
     }));
   };
 
@@ -223,56 +268,103 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               <button
                 type="button"
                 onClick={addVariante}
-                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="flex items-center space-x-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span className="text-sm">Adicionar Cor</span>
+                <span>Adicionar Cor</span>
               </button>
             </div>
             
             <div className="space-y-4">
               {formData.variantes.map((variante, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-900">Variante {index + 1}</h4>
+                <div key={index} className="border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-900">Cor {index + 1}</h4>
                     {formData.variantes.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeVariante(index)}
                         className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                    <div className="md:col-span-2">
+                  <div className="space-y-3">
+                    <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Cor</label>
                       <input
                         type="text"
                         value={variante.cor}
                         onChange={(e) => updateVariante(index, 'cor', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="Ex: Preto, Branco..."
                         required
                       />
                     </div>
                     
-                    {/* Tamanhos */}
-                    {['XS', 'S', 'M', 'L', 'XL'].map(tamanho => (
-                      <div key={tamanho}>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">{tamanho}</label>
-                        <input
-                          type="number"
-                          value={variante.tamanhos[tamanho] || ''}
-                          onChange={(e) => updateTamanho(index, tamanho, parseInt(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          min="0"
-                          placeholder="0"
-                        />
+                    {/* Tamanhos em grid compacto */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-medium text-gray-700">Quantidades por Tamanho</label>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={novoTamanho}
+                            onChange={(e) => setNovoTamanho(e.target.value)}
+                            placeholder="Ex: XXL"
+                            className="w-16 px-1 py-1 border border-gray-300 rounded text-xs text-center focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                adicionarTamanho();
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={adicionarTamanho}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Adicionar tamanho"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                      <div className={`grid gap-2 ${tamanhosDisponiveis.length <= 5 ? 'grid-cols-5' : tamanhosDisponiveis.length <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
+                        {tamanhosDisponiveis.map(tamanho => (
+                          <div key={tamanho} className="text-center">
+                            <div className="flex items-center justify-center mb-1">
+                              <label className="text-xs font-medium text-gray-600">{tamanho}</label>
+                              {!['XS', 'S', 'M', 'L', 'XL'].includes(tamanho) && (
+                                <button
+                                  type="button"
+                                  onClick={() => removerTamanho(tamanho)}
+                                  className="ml-1 p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                                  title={`Remover tamanho ${tamanho}`}
+                                >
+                                  <X className="w-2 h-2" />
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="number"
+                              value={variante.tamanhos[tamanho] || ''}
+                              onChange={(e) => updateTamanho(index, tamanho, parseInt(e.target.value) || 0)}
+                              className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              min="0"
+                              placeholder="0"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      {tamanhosDisponiveis.length > 5 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Dica: Use Enter para adicionar rapidamente um novo tamanho
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

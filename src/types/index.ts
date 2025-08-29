@@ -1,4 +1,4 @@
-export type PageType = 'producoes' | 'registos' | 'config';
+export type PageType = 'producoes' | 'registos';
 
 export type Etapa = 
   | 'Desenvolvimento'

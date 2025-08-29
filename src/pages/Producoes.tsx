@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { mockProducoes, etapas } from '../data/mockData';
 import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
@@ -60,55 +60,55 @@ const Producoes: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard de Produções</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard de Produções</h1>
             <p className="text-gray-600">Visão geral e acompanhamento em tempo real</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-blue-600">{estatisticas.total}</div>
+            <div className="text-xl font-bold text-blue-600">{estatisticas.total}</div>
             <div className="text-sm text-gray-500">Total de produções</div>
           </div>
         </div>
 
         {/* Estatísticas Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <TrendingUp className="w-8 h-8 text-green-600" />
+              <TrendingUp className="w-6 h-6 text-green-600" />
               <div>
-                <div className="text-2xl font-bold text-green-700">{estatisticas.emProducao}</div>
+                <div className="text-lg font-bold text-green-700">{estatisticas.emProducao}</div>
                 <div className="text-sm text-green-600">Em Produção</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+              <AlertTriangle className="w-6 h-6 text-red-600" />
               <div>
-                <div className="text-2xl font-bold text-red-700">{estatisticas.urgentes}</div>
+                <div className="text-lg font-bold text-red-700">{estatisticas.urgentes}</div>
                 <div className="text-sm text-red-600">Entrega Urgente</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <CheckCircle className="w-8 h-8 text-blue-600" />
+              <CheckCircle className="w-6 h-6 text-blue-600" />
               <div>
-                <div className="text-2xl font-bold text-blue-700">{estatisticas.prontas}</div>
+                <div className="text-lg font-bold text-blue-700">{estatisticas.prontas}</div>
                 <div className="text-sm text-blue-600">Prontas/Enviadas</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <Clock className="w-8 h-8 text-amber-600" />
+              <Clock className="w-6 h-6 text-amber-600" />
               <div>
-                <div className="text-2xl font-bold text-amber-700">{estatisticas.total - estatisticas.emProducao}</div>
+                <div className="text-lg font-bold text-amber-700">{estatisticas.total - estatisticas.emProducao}</div>
                 <div className="text-sm text-amber-600">Paradas</div>
               </div>
             </div>
@@ -117,11 +117,11 @@ const Producoes: React.FC = () => {
 
         {/* Estatísticas por Etapa (Compactas) */}
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Distribuição por Etapas</h3>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Distribuição por Etapas</h3>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-1">
             {etapas.map(etapa => (
               <div key={etapa} className="text-center">
-                <div className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getEtapaColor(etapa)} mb-1`}>
+                <div className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(etapa)} mb-1`}>
                   {estatisticas.porEtapa[etapa]}
                 </div>
                 <div className="text-xs text-gray-600 truncate">{etapa}</div>
@@ -132,26 +132,7 @@ const Producoes: React.FC = () => {
       </div>
 
       {/* Lista de Produções */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Produções Ativas</h2>
-              <p className="text-gray-600">Ordenadas por prioridade e cronologia</p>
-            </div>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                <span className="text-gray-600">Entrega Urgente (≤3 dias)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          <ProducoesList producoes={producoesOrdenadas} />
-        </div>
-      </div>
+      <ProducoesList producoes={producoesOrdenadas} />
     </div>
   );
 };
