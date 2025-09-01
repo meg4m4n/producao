@@ -64,6 +64,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     dataPrevisao: producao?.dataPrevisao || '',
     dataEstimadaEntrega: producao?.dataEstimadaEntrega || '',
     emProducao: producao?.emProducao || false,
+    problemas: producao?.problemas || false,
     faltaComponentes: producao?.estado === 'FALTA COMPONENTES' || false,
     localProducao: producao?.localProducao || 'Interno' as const,
     empresaExterna: producao?.empresaExterna || '',
@@ -588,6 +589,17 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               />
               <label htmlFor="emProducao" className="text-sm font-medium text-gray-700">
                 Em Produção
+              </label>
+              
+              <input
+                type="checkbox"
+                id="problemas"
+                checked={formData.problemas}
+                onChange={(e) => handleChange('problemas', e.target.checked)}
+                className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+              />
+              <label htmlFor="problemas" className="text-sm font-medium text-gray-700">
+                Com Problemas
               </label>
             </div>
           </div>

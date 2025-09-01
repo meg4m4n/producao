@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Edit, Trash2, Package, Search, Filter, MapPin, Building, Eye } from 'lucide-react';
+import { Edit, Trash2, Package, Search, Filter, MapPin, Building, Eye, AlertTriangle } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados } from '../data/mockData';
 import ProducaoDetailsModal from './ProducaoDetailsModal';
@@ -8,6 +8,7 @@ interface ProducoesListProps {
   producoes: Producao[];
   onEdit?: (producao: Producao) => void;
   onDelete?: (id: string) => void;
+  onUpdateFlags?: (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => void;
   showActions?: boolean;
 }
 
@@ -15,6 +16,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
   producoes, 
   onEdit, 
   onDelete, 
+  onUpdateFlags,
   showActions = false 
 }) => {
   const [filtroEtapa, setFiltroEtapa] = useState<Etapa | 'all'>('all');
@@ -74,6 +76,10 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
       new Set(producao.variantes.flatMap(v => Object.keys(v.tamanhos)))
     ).sort();
     return tamanhos.join(', ');
+  };
+
+  const handleFlagChange = (producaoId: string, flag: 'problemas' | 'emProducao', value: boolean) => {
+    onUpdateFlags?.(producaoId, { [flag]: value });
   };
 
   const producoesFiltradas = useMemo(() => {
@@ -148,15 +154,41 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             className={`
               rounded-lg border p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
               ${isUrgent(producao.dataEstimadaEntrega) 
-                ? 'bg-red-50 border-red-200' 
+                ? 'blink-red' 
                 : producao.estado === 'FALTA COMPONENTES'
                   ? 'bg-red-50 border-red-300 border-l-4 border-l-red-500'
                   : 'bg-white border-gray-200'
               }
             `}
           >
+            {/* Quick Action Flags */}
+            <div className="absolute top-2 right-2 flex flex-col space-y-1">
+              <div className="flex items-center space-x-1">
+                <input
+                  type="checkbox"
+                  id={`problemas-${producao.id}`}
+                  checked={producao.problemas || false}
+                  onChange={(e) => handleFlagChange(producao.id, 'problemas', e.target.checked)}
+                  className="w-3 h-3 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  title="Marcar como tendo problemas"
+                />
+                <AlertTriangle className={`w-3 h-3 ${producao.problemas ? 'text-red-600' : 'text-gray-300'}`} />
+              </div>
+              <div className="flex items-center space-x-1">
+                <input
+                  type="checkbox"
+                  id={`producao-${producao.id}`}
+                  checked={producao.emProducao || false}
+                  onChange={(e) => handleFlagChange(producao.id, 'emProducao', e.target.checked)}
+                  className="w-3 h-3 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  title="Marcar como em produção"
+                />
+                <Package className={`w-3 h-3 ${producao.emProducao ? 'text-green-600' : 'text-gray-300'}`} />
+              </div>
+            </div>
+
             {/* Título - Apenas Referência Interna */}
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start justify-between mb-3 pr-16">
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">{producao.referenciaInterna}</h3>
                 <div className="space-y-1">
@@ -250,12 +282,15 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             {/* Status Bar */}
             <div className={`
               absolute bottom-0 left-0 right-0 py-0.5 px-2 text-center text-xs font-bold tracking-wide
-              ${producao.emProducao 
+              ${(producao.emProducao || false)
                 ? 'bg-green-600 text-white' 
-                : 'bg-gray-400 text-white'
+                : producao.problemas 
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-400 text-white'
               }
             `}>
-              {producao.emProducao ? 'EM PRODUÇÃO' : 'PARADO'}
+              {(producao.emProducao || false) ? 'EM PRODUÇÃO' : 
+               producao.problemas ? 'COM PROBLEMAS' : 'PARADO'}
             </div>
           </div>
         ))}
@@ -273,6 +308,11 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
         isOpen={detailsModal.isOpen}
         onClose={() => setDetailsModal({ isOpen: false, producao: null })}
         producao={detailsModal.producao}
+        onUpdateFlags={(flags) => {
+          if (detailsModal.producao && onUpdateFlags) {
+            onUpdateFlags(detailsModal.producao.id, flags);
+          }
+        }}
       />
     </div>
   );

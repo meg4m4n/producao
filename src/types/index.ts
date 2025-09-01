@@ -27,23 +27,45 @@ export interface ProducaoComment {
   updatedAt: string;
 }
 
+export interface BOMFile {
+  id: string;
+  name: string;
+  url: string;
+  uploadDate: string;
+}
+
+export interface ProducaoComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Producao {
   id: string;
   marca: string;
-  modelo: string;
-  cor: string;
-  tamanho: string;
-  quantidade: number;
-  estado: Estado;
-  dataEntrega: string;
-  observacoes?: string;
-  prioridade: 'Baixa' | 'Média' | 'Alta';
   cliente: string;
+  referenciaInterna: string;
+  referenciaCliente: string;
+  descricao: string;
+  tipoPeca: string;
+  genero: 'Masculino' | 'Feminino' | 'Unissexo';
+  variantes: {
+    cor: string;
+    tamanhos: { [tamanho: string]: number };
+  }[];
+  etapa: Etapa;
+  estado: Estado;
+  dataInicio: string;
+  dataPrevisao: string;
+  dataEstimadaEntrega: string;
+  emProducao?: boolean;
   localProducao: 'Interno' | 'Externo';
   empresaExterna?: string;
   linkOdoo?: string;
   bomFiles?: BOMFile[];
   comments?: string;
+  problemas?: boolean;
 }
 
 export interface Cliente {

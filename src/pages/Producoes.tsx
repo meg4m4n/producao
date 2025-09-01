@@ -5,7 +5,13 @@ import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
 
 const Producoes: React.FC = () => {
-  const [producoes] = useState(mockProducoes);
+  const [producoes, setProducoes] = useState(mockProducoes);
+
+  const handleUpdateFlags = (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
+    setProducoes(prev => prev.map(p => 
+      p.id === id ? { ...p, ...flags } : p
+    ));
+  };
 
   const getEtapaColor = (etapa: Etapa): string => {
     const colors = {
@@ -31,7 +37,8 @@ const Producoes: React.FC = () => {
 
   const estatisticas = useMemo(() => {
     const total = producoes.length;
-    const emProducao = producoes.filter(p => p.emProducao).length;
+    const emProducao = producoes.filter(p => p.emProducao || false).length;
+    const comProblemas = producoes.filter(p => p.problemas || false).length;
     const urgentes = producoes.filter(p => isUrgent(p.dataEstimadaEntrega)).length;
     const prontas = producoes.filter(p => p.etapa === 'Pronto' || p.etapa === 'Enviado').length;
     
@@ -40,7 +47,7 @@ const Producoes: React.FC = () => {
       return acc;
     }, {} as Record<Etapa, number>);
     
-    return { total, emProducao, urgentes, prontas, porEtapa };
+    return { total, emProducao, comProblemas, urgentes, prontas, porEtapa };
   }, [producoes]);
 
   const producoesOrdenadas = useMemo(() => {
@@ -86,30 +93,30 @@ const Producoes: React.FC = () => {
 
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+              <AlertTriangle className="w-5 h-5 text-red-600" />
               <div>
-                <div className="text-lg font-bold text-red-700">{estatisticas.urgentes}</div>
-                <div className="text-sm text-red-600">Entrega Urgente</div>
+                <div className="text-lg font-bold text-red-700">{estatisticas.comProblemas}</div>
+                <div className="text-sm text-red-600">Com Problemas</div>
               </div>
             </div>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <CheckCircle className="w-6 h-6 text-blue-600" />
+              <Clock className="w-5 h-5 text-amber-600" />
               <div>
-                <div className="text-lg font-bold text-blue-700">{estatisticas.prontas}</div>
-                <div className="text-sm text-blue-600">Prontas/Enviadas</div>
+                <div className="text-lg font-bold text-amber-700">{estatisticas.urgentes}</div>
+                <div className="text-sm text-amber-600">Entrega Urgente</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <Clock className="w-6 h-6 text-amber-600" />
+              <CheckCircle className="w-5 h-5 text-green-600" />
               <div>
-                <div className="text-lg font-bold text-amber-700">{estatisticas.total - estatisticas.emProducao}</div>
-                <div className="text-sm text-amber-600">Paradas</div>
+                <div className="text-lg font-bold text-green-700">{estatisticas.prontas}</div>
+                <div className="text-sm text-green-600">Prontas/Enviadas</div>
               </div>
             </div>
           </div>
@@ -132,7 +139,10 @@ const Producoes: React.FC = () => {
       </div>
 
       {/* Lista de Produções */}
-      <ProducoesList producoes={producoesOrdenadas} />
+      <ProducoesList 
+        producoes={producoesOrdenadas} 
+        onUpdateFlags={handleUpdateFlags}
+      />
     </div>
   );
 };

@@ -170,12 +170,7 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
                   <div key={file.id} className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4 text-red-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                        <p className="text-xs text-gray-500">
-                          Enviado em {new Date(file.uploadDate).toLocaleDateString('pt-PT')}
-                        </p>
-                      </div>
+                      <span className="text-sm font-medium text-gray-900 truncate">{file.name}</span>
                     </div>
                   </div>
                 ))}

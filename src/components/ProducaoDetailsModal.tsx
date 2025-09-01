@@ -1,17 +1,19 @@
 import React from 'react';
-import { X, Package, ExternalLink, Building, MapPin } from 'lucide-react';
+import { X, Package, ExternalLink, Building, MapPin, AlertTriangle } from 'lucide-react';
 import { Producao } from '../types';
 
 interface ProducaoDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   producao: Producao | null;
+  onUpdateFlags?: (flags: { problemas?: boolean; emProducao?: boolean }) => void;
 }
 
 const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({ 
   isOpen, 
   onClose, 
-  producao 
+  producao,
+  onUpdateFlags
 }) => {
   if (!isOpen || !producao) return null;
 
@@ -46,6 +48,40 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Quick Action Flags */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Estado Rápido</h3>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="problemas-detail"
+                  checked={producao.problemas || false}
+                  onChange={(e) => onUpdateFlags?.({ problemas: e.target.checked })}
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <label htmlFor="problemas-detail" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                  <span>Com Problemas</span>
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="producao-detail"
+                  checked={producao.emProducao || false}
+                  onChange={(e) => onUpdateFlags?.({ emProducao: e.target.checked })}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="producao-detail" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <Package className="w-4 h-4 text-green-600" />
+                  <span>Em Produção</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           {/* Informações Básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">

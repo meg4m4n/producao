@@ -1,5 +1,15 @@
 import { Producao, Cliente, Etapa, Estado } from '../types';
 
+export type Etapa = 
+  | 'Desenvolvimento'
+  | '1º proto'
+  | '2º proto'
+  | 'Size-Set'
+  | 'PPS'
+  | 'Produção'
+  | 'Pronto'
+  | 'Enviado';
+
 export const etapas: Etapa[] = [
   'Desenvolvimento',
   '1º proto',
@@ -95,7 +105,9 @@ export const mockProducoes: Producao[] = [
     dataEstimadaEntrega: '2025-03-05',
     emProducao: true,
     localProducao: 'Interno',
-    linkOdoo: 'https://odoo.example.com/production/1'
+    linkOdoo: 'https://odoo.example.com/production/1',
+    problemas: false,
+    comments: 'Aguardando aprovação do protótipo pelo cliente antes de prosseguir com os componentes.'
   },
   {
     id: '2',
@@ -119,7 +131,17 @@ export const mockProducoes: Producao[] = [
     dataEstimadaEntrega: '2025-03-20',
     emProducao: true,
     localProducao: 'Externo',
-    empresaExterna: 'TextilPro Lda'
+    empresaExterna: 'TextilPro Lda',
+    problemas: true,
+    bomFiles: [
+      {
+        id: 'bom-1',
+        name: 'BOM_Hoodie_Adidas_v1.pdf',
+        url: '#',
+        uploadDate: '2025-01-20T10:30:00Z'
+      }
+    ],
+    comments: 'Falta confirmação do fornecedor de zíperes. Componente principal em atraso de 5 dias.'
   },
   {
     id: '3',
@@ -146,7 +168,8 @@ export const mockProducoes: Producao[] = [
     dataPrevisao: '2025-02-20',
     dataEstimadaEntrega: '2025-02-25',
     emProducao: true,
-    localProducao: 'Interno'
+    localProducao: 'Interno',
+    problemas: false
   },
   {
     id: '4',
@@ -170,7 +193,8 @@ export const mockProducoes: Producao[] = [
     dataEstimadaEntrega: '2025-01-28',
     emProducao: false,
     localProducao: 'Externo',
-    empresaExterna: 'Fashion Works'
+    empresaExterna: 'Fashion Works',
+    problemas: false
   },
   {
     id: '5',
@@ -197,7 +221,8 @@ export const mockProducoes: Producao[] = [
     dataPrevisao: '2025-02-10',
     dataEstimadaEntrega: '2025-02-15',
     emProducao: true,
-    localProducao: 'Interno'
+    localProducao: 'Interno',
+    problemas: false
   },
   {
     id: '6',
@@ -220,7 +245,8 @@ export const mockProducoes: Producao[] = [
     dataPrevisao: '2025-01-30',
     dataEstimadaEntrega: '2025-01-30',
     emProducao: false,
-    localProducao: 'Interno'
+    localProducao: 'Interno',
+    problemas: false
   },
   {
     id: '7',
@@ -243,7 +269,8 @@ export const mockProducoes: Producao[] = [
     dataPrevisao: '2025-01-15',
     dataEstimadaEntrega: '2025-01-15',
     emProducao: false,
-    localProducao: 'Interno'
+    localProducao: 'Interno',
+    problemas: false
   },
   {
     id: '8',
@@ -267,6 +294,32 @@ export const mockProducoes: Producao[] = [
     dataEstimadaEntrega: '2025-01-27',
     emProducao: true,
     localProducao: 'Externo',
-    empresaExterna: 'Premium Textiles'
+    empresaExterna: 'Premium Textiles',
+    problemas: true
+  },
+  {
+    id: '9',
+    marca: 'Nike',
+    cliente: 'SportZone',
+    referenciaInterna: 'NK-009-2025',
+    referenciaCliente: 'SZ-NIKE-SW-09',
+    descricao: 'Sweatshirt com capuz e cordões',
+    tipoPeca: 'Sweatshirt',
+    genero: 'Unissexo',
+    variantes: [
+      {
+        cor: 'Cinzento',
+        tamanhos: { 'M': 40, 'L': 50, 'XL': 30 }
+      }
+    ],
+    etapa: 'Desenvolvimento',
+    estado: 'FALTA COMPONENTES',
+    dataInicio: '2025-01-18',
+    dataPrevisao: '2025-03-10',
+    dataEstimadaEntrega: '2025-03-15',
+    emProducao: false,
+    localProducao: 'Interno',
+    problemas: true,
+    comments: 'Fornecedor de cordões não consegue entregar a tempo. Procurando alternativas.'
   }
 ];

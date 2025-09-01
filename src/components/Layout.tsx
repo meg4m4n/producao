@@ -24,7 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
       {/* Main content */}
       <div className={`
         flex-1 transition-all duration-300 ease-in-out
-        ${sidebarOpen ? 'ml-64' : 'ml-16'}
+        ${sidebarOpen ? 'ml-56' : 'ml-14'}
         pb-16
       `}>
         <main className="p-6 max-w-full">

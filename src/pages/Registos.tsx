@@ -48,6 +48,12 @@ const Registos: React.FC = () => {
     ));
   };
 
+  const handleUpdateFlags = (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
+    setProducoesState(prev => prev.map(p => 
+      p.id === id ? { ...p, ...flags } : p
+    ));
+  };
+
   const handleDeleteProducao = (id: string) => {
     if (confirm('Tem certeza que deseja remover esta produção?')) {
       setProducoesState(prev => prev.filter(p => p.id !== id));
@@ -136,6 +142,7 @@ const Registos: React.FC = () => {
         producoes={producoesState}
         onEdit={(producao) => setProducaoForm({ isOpen: true, producao })}
         onDelete={handleDeleteProducao}
+        onUpdateFlags={handleUpdateFlags}
         showActions={true}
       />
     </div>
