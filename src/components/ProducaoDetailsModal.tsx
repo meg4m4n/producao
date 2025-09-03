@@ -51,13 +51,19 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
           {/* Quick Action Flags */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Estado Rápido</h3>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 flex-wrap gap-2">
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   id="problemas-detail"
                   checked={producao.problemas || false}
-                  onChange={(e) => onUpdateFlags?.({ problemas: e.target.checked })}
+                  onChange={(e) => {
+                    onUpdateFlags?.({ problemas: e.target.checked });
+                    // Update local state immediately for visual feedback
+                    if (producao) {
+                      producao.problemas = e.target.checked;
+                    }
+                  }}
                   className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                 />
                 <label htmlFor="problemas-detail" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
@@ -71,12 +77,40 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
                   type="checkbox"
                   id="producao-detail"
                   checked={producao.emProducao || false}
-                  onChange={(e) => onUpdateFlags?.({ emProducao: e.target.checked })}
+                  onChange={(e) => {
+                    onUpdateFlags?.({ emProducao: e.target.checked });
+                    // Update local state immediately for visual feedback
+                    if (producao) {
+                      producao.emProducao = e.target.checked;
+                    }
+                  }}
                   className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                 />
                 <label htmlFor="producao-detail" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
                   <Package className="w-4 h-4 text-green-600" />
                   <span>Em Produção</span>
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="falta-componentes-detail"
+                  checked={producao.estado === 'FALTA COMPONENTES'}
+                  onChange={(e) => {
+                    const newEstado = e.target.checked ? 'FALTA COMPONENTES' : 'Aguarda Componentes';
+                    onUpdateFlags?.({ problemas: e.target.checked });
+                    // Update local state immediately for visual feedback
+                    if (producao) {
+                      producao.estado = newEstado;
+                      producao.problemas = e.target.checked;
+                    }
+                  }}
+                  className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="falta-componentes-detail" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                  <span>Falta Componentes</span>
                 </label>
               </div>
             </div>

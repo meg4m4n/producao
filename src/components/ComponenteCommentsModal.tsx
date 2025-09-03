@@ -432,17 +432,35 @@ const ComponenteCommentsModal: React.FC<ComponenteCommentsModalProps> = ({
                 </button>
               </div>
               <div className="p-4 h-96 flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Pré-visualização de ficheiro</p>
-                  <p className="text-sm text-gray-500">
-                    {previewFile.name}
-                    {'size' in previewFile && ` (${formatFileSize(previewFile.size)})`}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    A pré-visualização completa estará disponível após o upload
-                  </p>
-                </div>
+                {previewFile.name.toLowerCase().endsWith('.pdf') ? (
+                  <div className="w-full h-full">
+                    <iframe
+                      src={`data:application/pdf;base64,${btoa('PDF preview not available in demo')}`}
+                      className="w-full h-full border-0"
+                      title={`Preview of ${previewFile.name}`}
+                    />
+                  </div>
+                ) : previewFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img
+                      src={'url' in previewFile ? previewFile.url : URL.createObjectURL(previewFile as File)}
+                      alt={previewFile.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-2">Pré-visualização de ficheiro</p>
+                    <p className="text-sm text-gray-500">
+                      {previewFile.name}
+                      {'size' in previewFile && ` (${formatFileSize(previewFile.size)})`}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Tipo de ficheiro não suportado para pré-visualização
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

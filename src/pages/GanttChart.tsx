@@ -1,13 +1,18 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calendar, ZoomIn, ZoomOut, RotateCcw, Building, MapPin } from 'lucide-react';
+import { Calendar, ZoomIn, ZoomOut, RotateCcw, Building, MapPin, Edit } from 'lucide-react';
 import { Producao } from '../types';
 import { useProducoes } from '../hooks/useSupabaseData';
+import EditDateModal from '../components/EditDateModal';
 
 const GanttChart: React.FC = () => {
-  const { producoes, loading, error } = useProducoes();
+  const { producoes, loading, error, updateProducao } = useProducoes();
   const [zoomLevel, setZoomLevel] = useState(1);
   const [scrollPosition, setScrollPosition] = useState(0);
   const timelineRef = useRef<HTMLDivElement>(null);
+  const [editDateModal, setEditDateModal] = useState<{
+    isOpen: boolean;
+    producao: Producao | null;
+  }>({ isOpen: false, producao: null });
 
   // Calculate date range
   const dateRange = useMemo(() => {
@@ -151,6 +156,20 @@ const GanttChart: React.FC = () => {
       timelineRef.current.scrollLeft = scrollPosition;
     }
   }, [zoomLevel]);
+
+  const handleDateEdit = async (producao: Producao, newDates: { dataInicio: string; dataEstimadaEntrega: string }) => {
+    try {
+      const updatedProducao = {
+        ...producao,
+        dataInicio: newDates.dataInicio,
+        dataEstimadaEntrega: newDates.dataEstimadaEntrega
+      };
+      await updateProducao(producao.id, updatedProducao);
+      setEditDateModal({ isOpen: false, producao: null });
+    } catch (err) {
+      alert('Erro ao atualizar datas');
+    }
+  };
 
   if (loading) {
     return (
@@ -368,7 +387,7 @@ const GanttChart: React.FC = () => {
                     {/* Gantt Bar */}
                     <div
                       className={`
-                        absolute top-2 bottom-2 rounded-md shadow-sm z-10 flex items-center px-2
+                        absolute top-2 bottom-2 rounded-md shadow-sm z-10 flex items-center px-2 cursor-pointer
                         ${getBarColor(producao)} opacity-80 hover:opacity-100 transition-opacity
                       `}
                       style={{
@@ -376,9 +395,11 @@ const GanttChart: React.FC = () => {
                         width: getBarWidth(new Date(producao.dataInicio), new Date(producao.dataEstimadaEntrega))
                       }}
                       title={`${producao.referenciaInterna} - ${producao.etapa} - ${producao.estado}`}
+                      onClick={() => setEditDateModal({ isOpen: true, producao })}
                     >
-                      <div className="text-white text-xs font-medium truncate">
+                      <div className="text-white text-xs font-medium truncate flex items-center space-x-1">
                         {producao.etapa}
+                        <Edit className="w-3 h-3 opacity-70" />
                       </div>
                     </div>
                   </div>
@@ -443,6 +464,14 @@ const GanttChart: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Date Modal */}
+      <EditDateModal
+        isOpen={editDateModal.isOpen}
+        onClose={() => setEditDateModal({ isOpen: false, producao: null })}
+        onSave={handleDateEdit}
+        producao={editDateModal.producao}
+      />
     </div>
   );
 };

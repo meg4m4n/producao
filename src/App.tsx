@@ -4,6 +4,7 @@ import Producoes from './pages/Producoes';
 import Registos from './pages/Registos';
 import PrepararComponentes from './pages/PrepararComponentes';
 import GanttChart from './pages/GanttChart';
+import Historico from './pages/Historico';
 import { PageType } from './types';
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
         return <GanttChart />;
       case 'registos':
         return <Registos />;
+      case 'historico':
+        return <Historico />;
       default:
         return <Producoes />;
     }

@@ -255,7 +255,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
                 className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
               >
                 <Eye className="w-3 h-3" />
-                <span className="text-xs">Ver Registo Completo</span>
+                <span className="text-xs">Resumo</span>
               </button>
               
               {showActions && (

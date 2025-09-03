@@ -1,5 +1,5 @@
 import React from 'react';
-import { Factory, FileText, Menu, X, Package2, Calendar } from 'lucide-react';
+import { Factory, FileText, Menu, X, Package2, Calendar, Archive } from 'lucide-react';
 import { PageType } from '../types';
 
 interface SidebarProps {
@@ -34,6 +34,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
       label: 'Registos', 
       icon: FileText,
       description: 'Gestão de dados'
+    },
+    { 
+      id: 'historico' as PageType, 
+      label: 'Histórico', 
+      icon: Archive,
+      description: 'Eliminados e completos'
     },
   ];
 
