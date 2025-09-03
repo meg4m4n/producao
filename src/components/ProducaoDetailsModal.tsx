@@ -18,8 +18,15 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
   if (!isOpen || !producao) return null;
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    const quantidadeTotal = producao.variantes.reduce((total, variante) => {
+      return total + Object.values(variante.tamanhos).reduce((sum, qty) => sum + qty, 0);
+    }, 0);
+
+    const todosTamanhos = Array.from(
+      new Set(
+        producao.variantes.flatMap(v => Object.keys(v.tamanhos))
+      )
+    ).sort();
 
     const printContent = `
       <!DOCTYPE html>
@@ -176,6 +183,9 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
       </html>
     `;
 
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
     printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.focus();
@@ -271,15 +281,7 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
                   id="falta-componentes-detail"
                   checked={producao.estado === 'FALTA COMPONENTES'}
                   onChange={(e) => {
-                    if (onUpdateFlags) {
-                      // Update the production state
-                      const updatedProducao = {
-                        ...producao,
-                        estado: e.target.checked ? 'FALTA COMPONENTES' as const : 'Aguarda Componentes' as const
-                      };
-                      // This would need to be handled by the parent component
-                      onUpdateFlags({ faltaComponentes: e.target.checked });
-                    }
+                    onUpdateFlags?.({ faltaComponentes: e.target.checked });
                   }}
                   className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
                 />

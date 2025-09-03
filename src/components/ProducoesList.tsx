@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Edit, Trash2, Package, Search, Filter, MapPin, Building, Eye, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Package, Search, Filter, MapPin, Building, Eye, AlertTriangle, Clock } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados } from '../data/mockData';
 import ProducaoDetailsModal from './ProducaoDetailsModal';
@@ -80,15 +80,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
 
   const handleFlagChange = (producaoId: string, flag: 'problemas' | 'emProducao' | 'faltaComponentes', value: boolean) => {
     if (flag === 'faltaComponentes') {
-      // Handle falta componentes state change
-      const producao = producoes.find(p => p.id === producaoId);
-      if (producao && onEdit) {
-        const updatedProducao = {
-          ...producao,
-          estado: value ? 'FALTA COMPONENTES' as Estado : 'Aguarda Componentes' as Estado
-        };
-        onEdit(updatedProducao);
-      }
+      onUpdateFlags?.(producaoId, { faltaComponentes: value });
     } else {
       onUpdateFlags?.(producaoId, { [flag]: value });
     }

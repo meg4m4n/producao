@@ -60,24 +60,14 @@ export const useProducoes = () => {
 
   const updateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }) => {
     try {
-      // Handle falta componentes state change
-      if (flags.faltaComponentes !== undefined) {
-        const producao = producoes.find(p => p.id === id);
-        if (producao) {
-          const updatedProducao = {
-            ...producao,
-            estado: flags.faltaComponentes ? 'FALTA COMPONENTES' as const : 'Aguarda Componentes' as const
-          };
-          await updateProducao(id, updatedProducao);
-          return;
-        }
-      }
-      
       await supabaseApi.updateProducaoFlags(id, flags);
       setProducoes(prev => prev.map(p => p.id === id ? { 
         ...p, 
         problemas: flags.problemas !== undefined ? flags.problemas : p.problemas,
-        emProducao: flags.emProducao !== undefined ? flags.emProducao : p.emProducao
+        emProducao: flags.emProducao !== undefined ? flags.emProducao : p.emProducao,
+        estado: flags.faltaComponentes !== undefined 
+          ? (flags.faltaComponentes ? 'FALTA COMPONENTES' as const : 'Aguarda Componentes' as const)
+          : p.estado
       } : p));
     } catch (err) {
       setError('Erro ao atualizar flags');
