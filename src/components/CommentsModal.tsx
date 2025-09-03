@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, MessageSquare } from 'lucide-react';
 import { Producao } from '../types';
 
@@ -17,6 +18,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
 }) => {
   const [comments, setComments] = useState(producao?.comments || '');
 
+  // Preencher comentários quando o modal abrir
+  useEffect(() => {
+    if (isOpen && producao) {
+      setComments(producao.comments || '');
+    } else if (!isOpen) {
+      setComments('');
+    }
+  }, [isOpen, producao]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(comments);

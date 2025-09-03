@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, FileText, Plus, Trash2 } from 'lucide-react';
 import { Producao, BOMFile } from '../types';
 
@@ -18,6 +19,13 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Reset selected files when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedFiles([]);
+      setIsDragging(false);
+    }
+  }, [isOpen]);
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return;
     

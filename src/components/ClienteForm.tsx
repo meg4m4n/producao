@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Users, Plus, Trash2 } from 'lucide-react';
 import { Cliente } from '../types';
 
@@ -15,6 +16,21 @@ const ClienteForm: React.FC<ClienteFormProps> = ({ isOpen, onClose, onSave, clie
     marcas: cliente?.marcas || ['']
   });
 
+  // Preencher dados quando estiver a editar
+  useEffect(() => {
+    if (isOpen && cliente) {
+      setFormData({
+        nome: cliente.nome || '',
+        marcas: cliente.marcas.length > 0 ? cliente.marcas : ['']
+      });
+    } else if (isOpen && !cliente) {
+      // Reset form for new client
+      setFormData({
+        nome: '',
+        marcas: ['']
+      });
+    }
+  }, [isOpen, cliente]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const marcasFiltradas = formData.marcas.filter(marca => marca.trim() !== '');

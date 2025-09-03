@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Edit } from 'lucide-react';
 
 interface EditModalProps {
@@ -23,6 +24,13 @@ const EditModal: React.FC<EditModalProps> = ({
   const [editValue, setEditValue] = useState(value);
   const [editColor, setEditColor] = useState(color);
 
+  // Preencher valores quando o modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      setEditValue(value || '');
+      setEditColor(color || '#3B82F6');
+    }
+  }, [isOpen, value, color]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editValue.trim()) {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Building } from 'lucide-react';
 import { Marca, Cliente } from '../types';
 
@@ -16,6 +17,21 @@ const MarcaForm: React.FC<MarcaFormProps> = ({ isOpen, onClose, onSave, marca, c
     clienteId: marca?.clienteId || ''
   });
 
+  // Preencher dados quando estiver a editar
+  useEffect(() => {
+    if (isOpen && marca) {
+      setFormData({
+        nome: marca.nome || '',
+        clienteId: marca.clienteId || ''
+      });
+    } else if (isOpen && !marca) {
+      // Reset form for new marca
+      setFormData({
+        nome: '',
+        clienteId: ''
+      });
+    }
+  }, [isOpen, marca]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.nome.trim() && formData.clienteId) {
