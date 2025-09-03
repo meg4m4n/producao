@@ -1,39 +1,86 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Package, Tag, Activity } from 'lucide-react';
-import { categorias, etapas, estados } from '../data/mockData';
+import { Plus, Edit, Trash2, Package, Activity, Users, Building } from 'lucide-react';
+import { etapas, estados, mockProducoes, clientes } from '../data/mockData';
 import EditModal from '../components/EditModal';
-import { Categoria } from '../types';
+import ProducaoForm from '../components/ProducaoForm';
+import ProducoesList from '../components/ProducoesList';
+import ClienteForm from '../components/ClienteForm';
+import { Producao, Cliente } from '../types';
 
-type GestaoTab = 'categorias' | 'etapas' | 'estados';
+type GestaoTab = 'producoes' | 'clientes' | 'etapas' | 'estados';
 
 const Registos: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<GestaoTab>('categorias');
-  const [categoriasState, setCategoriasState] = useState(categorias);
+  const [activeTab, setActiveTab] = useState<GestaoTab>('producoes');
+  const [clientesState, setClientesState] = useState(clientes);
   const [etapasState, setEtapasState] = useState(etapas);
   const [estadosState, setEstadosState] = useState(estados);
+  const [producoesState, setProducoesState] = useState(mockProducoes);
   
   // Modal states
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
-    type: 'categoria' | 'etapa' | 'estado' | 'new';
+    type: 'etapa' | 'estado' | 'new';
     item?: any;
     index?: number;
-  }>({ isOpen: false, type: 'categoria' });
+  }>({ isOpen: false, type: 'etapa' });
 
-  const handleSaveCategoria = (nome: string, cor?: string) => {
-    if (editModal.type === 'new') {
-      const novaCategoria: Categoria = {
-        id: Date.now().toString(),
-        nome,
-        cor: cor || '#3B82F6'
-      };
-      setCategoriasState(prev => [...prev, novaCategoria]);
-    } else if (editModal.index !== undefined) {
-      setCategoriasState(prev => prev.map((cat, idx) => 
-        idx === editModal.index ? { ...cat, nome, cor: cor || cat.cor } : cat
-      ));
+  const [producaoForm, setProducaoForm] = useState<{
+    isOpen: boolean;
+    producao?: Producao;
+  }>({ isOpen: false });
+
+  const [clienteForm, setClienteForm] = useState<{
+    isOpen: boolean;
+    cliente?: Cliente;
+  }>({ isOpen: false });
+
+  const handleCreateProducao = (novaProducao: Omit<Producao, 'id'>) => {
+    const producao: Producao = {
+      ...novaProducao,
+      id: Date.now().toString()
+    };
+    setProducoesState(prev => [...prev, producao]);
+  };
+
+  const handleUpdateProducao = (producaoAtualizada: Producao) => {
+    setProducoesState(prev => prev.map(p => 
+      p.id === producaoAtualizada.id ? producaoAtualizada : p
+    ));
+  };
+
+  const handleUpdateFlags = (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
+    setProducoesState(prev => prev.map(p => 
+      p.id === id ? { ...p, ...flags } : p
+    ));
+  };
+
+  const handleDeleteProducao = (id: string) => {
+    if (confirm('Tem certeza que deseja remover esta produção?')) {
+      setProducoesState(prev => prev.filter(p => p.id !== id));
     }
-    setEditModal({ isOpen: false, type: 'categoria' });
+  };
+
+  const handleSaveCliente = (cliente: Omit<Cliente, 'id'>) => {
+    if (clienteForm.cliente) {
+      // Editar cliente existente
+      setClientesState(prev => prev.map(c => 
+        c.id === clienteForm.cliente!.id ? { ...cliente, id: clienteForm.cliente!.id } : c
+      ));
+    } else {
+      // Criar novo cliente
+      const novoCliente: Cliente = {
+        ...cliente,
+        id: Date.now().toString()
+      };
+      setClientesState(prev => [...prev, novoCliente]);
+    }
+    setClienteForm({ isOpen: false });
+  };
+
+  const handleDeleteCliente = (id: string) => {
+    if (confirm('Tem certeza que deseja remover este cliente?')) {
+      setClientesState(prev => prev.filter(c => c.id !== id));
+    }
   };
 
   const handleSaveEtapa = (nome: string) => {
@@ -58,12 +105,9 @@ const Registos: React.FC = () => {
     setEditModal({ isOpen: false, type: 'estado' });
   };
 
-  const handleDelete = (type: 'categoria' | 'etapa' | 'estado', index: number) => {
+  const handleDelete = (type: 'etapa' | 'estado', index: number) => {
     if (confirm('Tem certeza que deseja remover este item?')) {
       switch (type) {
-        case 'categoria':
-          setCategoriasState(prev => prev.filter((_, idx) => idx !== index));
-          break;
         case 'etapa':
           setEtapasState(prev => prev.filter((_, idx) => idx !== index));
           break;
@@ -75,53 +119,80 @@ const Registos: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'categorias' as GestaoTab, label: 'Categorias', icon: Tag },
-    { id: 'etapas' as GestaoTab, label: 'Etapas', icon: Package },
+    { id: 'producoes' as GestaoTab, label: 'Produções', icon: Package },
+    { id: 'clientes' as GestaoTab, label: 'Clientes', icon: Users },
+    { id: 'etapas' as GestaoTab, label: 'Etapas', icon: Building },
     { id: 'estados' as GestaoTab, label: 'Estados', icon: Activity },
   ];
 
-  const renderCategorias = () => (
+  const renderProducoes = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Gestão de Categorias</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Produções</h3>
         <button 
-          onClick={() => setEditModal({ isOpen: true, type: 'new' })}
+          onClick={() => setProducaoForm({ isOpen: true })}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Nova Categoria</span>
+          <span>Nova Produção</span>
+        </button>
+      </div>
+      
+      <ProducoesList
+        producoes={producoesState}
+        onEdit={(producao) => setProducaoForm({ isOpen: true, producao })}
+        onDelete={handleDeleteProducao}
+        onUpdateFlags={handleUpdateFlags}
+        showActions={true}
+      />
+    </div>
+  );
+
+  const renderClientes = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Clientes e Marcas</h3>
+        <button 
+          onClick={() => setClienteForm({ isOpen: true })}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Novo Cliente</span>
         </button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categoriasState.map((categoria, index) => (
-          <div key={categoria.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+        {clientesState.map((cliente) => (
+          <div key={cliente.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: categoria.cor }}
-                />
-                <span className="font-medium text-gray-900">{categoria.nome}</span>
+                <Users className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-gray-900">{cliente.nome}</span>
               </div>
               <div className="flex space-x-2">
                 <button 
-                  onClick={() => setEditModal({ 
-                    isOpen: true, 
-                    type: 'categoria', 
-                    item: categoria, 
-                    index 
-                  })}
+                  onClick={() => setClienteForm({ isOpen: true, cliente })}
                   className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => handleDelete('categoria', index)}
+                  onClick={() => handleDeleteCliente(cliente.id)}
                   className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-2">Marcas</label>
+              <div className="flex flex-wrap gap-1">
+                {cliente.marcas.map(marca => (
+                  <span key={marca} className="inline-flex px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {marca}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
@@ -231,7 +302,7 @@ const Registos: React.FC = () => {
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Registos</h1>
-        <p className="text-gray-600">Gestão de categorias, etapas e estados do sistema</p>
+        <p className="text-gray-600">Gestão completa de produções, clientes, etapas e estados</p>
       </div>
 
       {/* Tabs */}
@@ -261,7 +332,8 @@ const Registos: React.FC = () => {
         </div>
         
         <div className="p-6">
-          {activeTab === 'categorias' && renderCategorias()}
+          {activeTab === 'producoes' && renderProducoes()}
+          {activeTab === 'clientes' && renderClientes()}
           {activeTab === 'etapas' && renderEtapas()}
           {activeTab === 'estados' && renderEstados()}
         </div>
@@ -270,19 +342,32 @@ const Registos: React.FC = () => {
       {/* Modal de Edição */}
       <EditModal
         isOpen={editModal.isOpen}
-        onClose={() => setEditModal({ isOpen: false, type: 'categoria' })}
+        onClose={() => setEditModal({ isOpen: false, type: 'etapa' })}
         onSave={
-          activeTab === 'categorias' ? handleSaveCategoria :
-          activeTab === 'etapas' ? handleSaveEtapa :
-          handleSaveEstado
+          activeTab === 'etapas' ? handleSaveEtapa : handleSaveEstado
         }
         title={
           editModal.type === 'new' ? `Nova ${activeTab.slice(0, -1)}` :
           `Editar ${activeTab.slice(0, -1)}`
         }
         value={editModal.item || ''}
-        color={editModal.item?.cor}
-        showColorPicker={activeTab === 'categorias'}
+        showColorPicker={false}
+      />
+
+      {/* Modal de Produção */}
+      <ProducaoForm
+        isOpen={producaoForm.isOpen}
+        onClose={() => setProducaoForm({ isOpen: false })}
+        onSave={producaoForm.producao ? handleUpdateProducao : handleCreateProducao}
+        producao={producaoForm.producao}
+      />
+
+      {/* Modal de Cliente */}
+      <ClienteForm
+        isOpen={clienteForm.isOpen}
+        onClose={() => setClienteForm({ isOpen: false })}
+        onSave={handleSaveCliente}
+        cliente={clienteForm.cliente}
       />
     </div>
   );

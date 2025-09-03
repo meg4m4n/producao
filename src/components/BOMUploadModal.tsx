@@ -53,17 +53,23 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
     
     if (selectedFiles.length === 0) return;
 
-    // Simular upload e criar URLs fictícios
+    // Simular upload real - em produção seria enviado para servidor
     const bomFiles: BOMFile[] = selectedFiles.map(file => ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name: file.name,
-      url: URL.createObjectURL(file), // Em produção seria o URL real do ficheiro
+      url: `https://storage.example.com/bom/${file.name}`, // URL simulado
       uploadDate: new Date().toISOString()
     }));
 
-    onUpload(bomFiles);
-    setSelectedFiles([]);
-    onClose();
+    // Simular delay de upload
+    setTimeout(() => {
+      onUpload(bomFiles);
+      setSelectedFiles([]);
+      onClose();
+      
+      // Mostrar feedback de sucesso
+      alert(`${bomFiles.length} ficheiro(s) BOM enviado(s) com sucesso!`);
+    }, 1000);
   };
 
   const formatFileSize = (bytes: number): string => {

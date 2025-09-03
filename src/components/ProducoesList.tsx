@@ -153,9 +153,9 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             key={producao.id} 
             className={`
               rounded-lg border p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
-              ${isUrgent(producao.dataEstimadaEntrega) 
+              ${(producao.problemas || false) || producao.estado === 'FALTA COMPONENTES'
                 ? 'blink-red' 
-                : producao.estado === 'FALTA COMPONENTES'
+                : isUrgent(producao.dataEstimadaEntrega)
                   ? 'bg-red-50 border-red-300 border-l-4 border-l-red-500'
                   : 'bg-white border-gray-200'
               }

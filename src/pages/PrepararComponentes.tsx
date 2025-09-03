@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye } from 'lucide-react';
+import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit } from 'lucide-react';
 import { mockProducoes } from '../data/mockData';
 import { Producao, BOMFile } from '../types';
 import BOMUploadModal from '../components/BOMUploadModal';
 import CommentsModal from '../components/CommentsModal';
 import ProducaoDetailsModal from '../components/ProducaoDetailsModal';
+import ProducaoForm from '../components/ProducaoForm';
 
 const PrepararComponentes: React.FC = () => {
   const [producoes, setProducoes] = useState(mockProducoes);
@@ -19,6 +20,11 @@ const PrepararComponentes: React.FC = () => {
   }>({ isOpen: false, producao: null });
 
   const [detailsModal, setDetailsModal] = useState<{
+    isOpen: boolean;
+    producao: Producao | null;
+  }>({ isOpen: false, producao: null });
+
+  const [editModal, setEditModal] = useState<{
     isOpen: boolean;
     producao: Producao | null;
   }>({ isOpen: false, producao: null });
@@ -62,6 +68,13 @@ const PrepararComponentes: React.FC = () => {
     setProducoes(prev => prev.map(p => 
       p.id === id ? { ...p, ...flags } : p
     ));
+  };
+
+  const handleUpdateProducao = (producaoAtualizada: Producao) => {
+    setProducoes(prev => prev.map(p => 
+      p.id === producaoAtualizada.id ? producaoAtualizada : p
+    ));
+    setEditModal({ isOpen: false, producao: null });
   };
 
   const getQuantidadeTotal = (producao: Producao): number => {
@@ -256,6 +269,13 @@ const PrepararComponentes: React.FC = () => {
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => setEditModal({ isOpen: true, producao })}
+                        className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                        title="Editar produção"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => setDetailsModal({ isOpen: true, producao })}
                         className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                         title="Ver detalhes"
@@ -313,6 +333,14 @@ const PrepararComponentes: React.FC = () => {
             handleUpdateFlags(detailsModal.producao.id, flags);
           }
         }}
+      />
+
+      {/* Modal de Edição */}
+      <ProducaoForm
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false, producao: null })}
+        onSave={handleUpdateProducao}
+        producao={editModal.producao || undefined}
       />
     </div>
   );
