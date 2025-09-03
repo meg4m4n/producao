@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from './components/Layout';
 import Producoes from './pages/Producoes';
 import Registos from './pages/Registos';
-import PrepararComponentes from './pages/PrepararComponentes';
+import Config from './pages/Config';
 import { PageType } from './types';
 
 function App() {
@@ -12,10 +12,10 @@ function App() {
     switch (currentPage) {
       case 'producoes':
         return <Producoes />;
-      case 'preparar-componentes':
-        return <PrepararComponentes />;
       case 'registos':
         return <Registos />;
+      case 'config':
+        return <Config />;
       default:
         return <Producoes />;
     }
