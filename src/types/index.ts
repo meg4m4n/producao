@@ -71,9 +71,7 @@ export interface Producao {
 export interface Cliente {
   id: string;
   nome: string;
-  email: string;
-  telefone?: string;
-  endereco?: string;
+  marcas: string[];
 }
 
 export interface Registo {
@@ -85,3 +83,20 @@ export interface Registo {
   observacoes?: string;
   operador: string;
 }
+
+export interface Marca {
+  id: string;
+  nome: string;
+  clienteId: string;
+  clienteNome: string;
+}
+
+export type Etapa = 
+  | 'Desenvolvimento'
+  | '1º proto'
+  | '2º proto'
+  | 'Size-Set'
+  | 'PPS'
+  | 'Produção'
+  | 'Pronto'
+  | 'Enviado';

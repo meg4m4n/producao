@@ -1,20 +1,37 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Package, Activity, Users, Building } from 'lucide-react';
-import { etapas, estados, mockProducoes, clientes } from '../data/mockData';
+import { etapas, estados } from '../data/mockData';
 import EditModal from '../components/EditModal';
 import ProducaoForm from '../components/ProducaoForm';
 import ProducoesList from '../components/ProducoesList';
 import ClienteForm from '../components/ClienteForm';
 import { Producao, Cliente } from '../types';
+import { useProducoes, useClientes } from '../hooks/useSupabaseData';
 
 type GestaoTab = 'producoes' | 'clientes' | 'etapas' | 'estados';
 
 const Registos: React.FC = () => {
   const [activeTab, setActiveTab] = useState<GestaoTab>('producoes');
-  const [clientesState, setClientesState] = useState(clientes);
+  
+  const { 
+    producoes, 
+    loading: producoesLoading, 
+    createProducao, 
+    updateProducao, 
+    deleteProducao, 
+    updateFlags 
+  } = useProducoes();
+  
+  const { 
+    clientes, 
+    loading: clientesLoading, 
+    createCliente, 
+    updateCliente, 
+    deleteCliente 
+  } = useClientes();
+  
   const [etapasState, setEtapasState] = useState(etapas);
   const [estadosState, setEstadosState] = useState(estados);
-  const [producoesState, setProducoesState] = useState(mockProducoes);
   
   // Modal states
   const [editModal, setEditModal] = useState<{
@@ -34,52 +51,66 @@ const Registos: React.FC = () => {
     cliente?: Cliente;
   }>({ isOpen: false });
 
-  const handleCreateProducao = (novaProducao: Omit<Producao, 'id'>) => {
-    const producao: Producao = {
-      ...novaProducao,
-      id: Date.now().toString()
-    };
-    setProducoesState(prev => [...prev, producao]);
-  };
-
-  const handleUpdateProducao = (producaoAtualizada: Producao) => {
-    setProducoesState(prev => prev.map(p => 
-      p.id === producaoAtualizada.id ? producaoAtualizada : p
-    ));
-  };
-
-  const handleUpdateFlags = (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
-    setProducoesState(prev => prev.map(p => 
-      p.id === id ? { ...p, ...flags } : p
-    ));
-  };
-
-  const handleDeleteProducao = (id: string) => {
-    if (confirm('Tem certeza que deseja remover esta produção?')) {
-      setProducoesState(prev => prev.filter(p => p.id !== id));
+  const handleCreateProducao = async (novaProducao: Omit<Producao, 'id'>) => {
+    try {
+      await createProducao(novaProducao);
+    } catch (err) {
+      alert('Erro ao criar produção');
     }
   };
 
-  const handleSaveCliente = (cliente: Omit<Cliente, 'id'>) => {
+  const handleUpdateProducao = async (producaoAtualizada: Producao) => {
+    try {
+      await updateProducao(producaoAtualizada.id, producaoAtualizada);
+    } catch (err) {
+      alert('Erro ao atualizar produção');
+    }
+  };
+
+  const handleUpdateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
+    try {
+      await updateFlags(id, flags);
+    } catch (err) {
+      alert('Erro ao atualizar flags');
+    }
+  };
+
+  const handleDeleteProducao = async (id: string) => {
+    if (confirm('Tem certeza que deseja remover esta produção?')) {
+      try {
+        await deleteProducao(id);
+      } catch (err) {
+        alert('Erro ao remover produção');
+      }
+    }
+  };
+
+  const handleSaveCliente = async (cliente: Omit<Cliente, 'id'>) => {
     if (clienteForm.cliente) {
       // Editar cliente existente
-      setClientesState(prev => prev.map(c => 
-        c.id === clienteForm.cliente!.id ? { ...cliente, id: clienteForm.cliente!.id } : c
-      ));
+      try {
+        await updateCliente(clienteForm.cliente.id, cliente);
+      } catch (err) {
+        alert('Erro ao atualizar cliente');
+      }
     } else {
       // Criar novo cliente
-      const novoCliente: Cliente = {
-        ...cliente,
-        id: Date.now().toString()
-      };
-      setClientesState(prev => [...prev, novoCliente]);
+      try {
+        await createCliente(cliente);
+      } catch (err) {
+        alert('Erro ao criar cliente');
+      }
     }
     setClienteForm({ isOpen: false });
   };
 
-  const handleDeleteCliente = (id: string) => {
+  const handleDeleteCliente = async (id: string) => {
     if (confirm('Tem certeza que deseja remover este cliente?')) {
-      setClientesState(prev => prev.filter(c => c.id !== id));
+      try {
+        await deleteCliente(id);
+      } catch (err) {
+        alert('Erro ao remover cliente');
+      }
     }
   };
 
@@ -139,7 +170,7 @@ const Registos: React.FC = () => {
       </div>
       
       <ProducoesList
-        producoes={producoesState}
+        producoes={producoes}
         onEdit={(producao) => setProducaoForm({ isOpen: true, producao })}
         onDelete={handleDeleteProducao}
         onUpdateFlags={handleUpdateFlags}
@@ -162,7 +193,7 @@ const Registos: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {clientesState.map((cliente) => (
+        {clientes.map((cliente) => (
           <div key={cliente.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">

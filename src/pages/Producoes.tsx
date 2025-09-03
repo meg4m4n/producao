@@ -1,42 +1,52 @@
 import React, { useState, useMemo } from 'react';
 import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit } from 'lucide-react';
-import { mockProducoes, etapas } from '../data/mockData';
+import { etapas } from '../data/mockData';
 import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
 import ProducaoForm from '../components/ProducaoForm';
+import { useProducoes } from '../hooks/useSupabaseData';
 
 const Producoes: React.FC = () => {
-  const [producoes, setProducoes] = useState(mockProducoes);
+  const { 
+    producoes, 
+    loading, 
+    error, 
+    createProducao, 
+    updateProducao, 
+    deleteProducao, 
+    updateFlags 
+  } = useProducoes();
+  
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
     producao?: Producao;
   }>({ isOpen: false });
 
-  const handleUpdateFlags = (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
-    setProducoes(prev => prev.map(p => 
-      p.id === id ? { ...p, ...flags } : p
-    ));
-  };
-
-  const handleCreateProducao = (novaProducao: Omit<Producao, 'id'>) => {
-    const producao: Producao = {
-      ...novaProducao,
-      id: Date.now().toString()
-    };
-    setProducoes(prev => [...prev, producao]);
+  const handleCreateProducao = async (novaProducao: Omit<Producao, 'id'>) => {
+    try {
+      await createProducao(novaProducao);
+    } catch (err) {
+      alert('Erro ao criar produção');
+    }
     setEditModal({ isOpen: false });
   };
 
-  const handleUpdateProducao = (producaoAtualizada: Producao) => {
-    setProducoes(prev => prev.map(p => 
-      p.id === producaoAtualizada.id ? producaoAtualizada : p
-    ));
+  const handleUpdateProducao = async (producaoAtualizada: Producao) => {
+    try {
+      await updateProducao(producaoAtualizada.id, producaoAtualizada);
+    } catch (err) {
+      alert('Erro ao atualizar produção');
+    }
     setEditModal({ isOpen: false });
   };
 
-  const handleDeleteProducao = (id: string) => {
+  const handleDeleteProducao = async (id: string) => {
     if (confirm('Tem certeza que deseja remover esta produção?')) {
-      setProducoes(prev => prev.filter(p => p.id !== id));
+      try {
+        await deleteProducao(id);
+      } catch (err) {
+        alert('Erro ao remover produção');
+      }
     }
   };
 
@@ -76,6 +86,31 @@ const Producoes: React.FC = () => {
     
     return { total, emProducao, comProblemas, urgentes, prontas, porEtapa };
   }, [producoes]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando produções...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="flex items-center space-x-3">
+          <AlertTriangle className="w-6 h-6 text-red-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-red-900">Erro ao carregar dados</h3>
+            <p className="text-red-700">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const producoesOrdenadas = useMemo(() => {
     return [...producoes].sort((a, b) => {
@@ -177,7 +212,7 @@ const Producoes: React.FC = () => {
       {/* Lista de Produções */}
       <ProducoesList 
         producoes={producoesOrdenadas} 
-        onUpdateFlags={handleUpdateFlags}
+        onUpdateFlags={updateFlags}
         onEdit={(producao) => setEditModal({ isOpen: true, producao })}
         onDelete={handleDeleteProducao}
         showActions={true}

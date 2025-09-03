@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Calendar, ZoomIn, ZoomOut, RotateCcw, Building, MapPin } from 'lucide-react';
-import { mockProducoes } from '../data/mockData';
 import { Producao } from '../types';
+import { useProducoes } from '../hooks/useSupabaseData';
 
 const GanttChart: React.FC = () => {
-  const [producoes] = useState(mockProducoes);
+  const { producoes, loading, error } = useProducoes();
   const [zoomLevel, setZoomLevel] = useState(1);
   const [scrollPosition, setScrollPosition] = useState(0);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -151,6 +151,31 @@ const GanttChart: React.FC = () => {
       timelineRef.current.scrollLeft = scrollPosition;
     }
   }, [zoomLevel]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando gráfico de Gantt...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="flex items-center space-x-3">
+          <Calendar className="w-6 h-6 text-red-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-red-900">Erro ao carregar dados</h3>
+            <p className="text-red-700">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

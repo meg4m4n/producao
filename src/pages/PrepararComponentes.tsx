@@ -1,14 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit } from 'lucide-react';
-import { mockProducoes } from '../data/mockData';
 import { Producao, BOMFile } from '../types';
 import BOMUploadModal from '../components/BOMUploadModal';
 import CommentsModal from '../components/CommentsModal';
 import ProducaoDetailsModal from '../components/ProducaoDetailsModal';
 import ProducaoForm from '../components/ProducaoForm';
+import { useProducoes } from '../hooks/useSupabaseData';
+import * as supabaseApi from '../services/supabaseApi';
 
 const PrepararComponentes: React.FC = () => {
-  const [producoes, setProducoes] = useState(mockProducoes);
+  const { 
+    producoes, 
+    loading, 
+    error, 
+    updateProducao, 
+    updateFlags, 
+    updateComments 
+  } = useProducoes();
+  
   const [bomModal, setBomModal] = useState<{
     isOpen: boolean;
     producao: Producao | null;
@@ -38,42 +47,50 @@ const PrepararComponentes: React.FC = () => {
     );
   }, [producoes]);
 
-  const handleUploadBOM = (producaoId: string, files: BOMFile[]) => {
-    setProducoes(prev => prev.map(p => 
-      p.id === producaoId 
-        ? { ...p, bomFiles: [...(p.bomFiles || []), ...files] }
-        : p
-    ));
-  };
-
-  const handleDeleteBOM = (producaoId: string, bomId: string) => {
-    if (confirm('Tem certeza que deseja remover este ficheiro BOM?')) {
-      setProducoes(prev => prev.map(p => 
-        p.id === producaoId 
-          ? { ...p, bomFiles: (p.bomFiles || []).filter(f => f.id !== bomId) }
-          : p
-      ));
+  const handleUploadBOM = async (producaoId: string, files: BOMFile[]) => {
+    try {
+      await supabaseApi.createBOMFiles(producaoId, files);
+      // Refresh data to get updated BOM files
+      window.location.reload();
+    } catch (err) {
+      alert('Erro ao fazer upload dos ficheiros BOM');
     }
   };
 
-  const handleUpdateComments = (producaoId: string, comments: string) => {
-    setProducoes(prev => prev.map(p => 
-      p.id === producaoId 
-        ? { ...p, comments }
-        : p
-    ));
+  const handleDeleteBOM = async (producaoId: string, bomId: string) => {
+    if (confirm('Tem certeza que deseja remover este ficheiro BOM?')) {
+      try {
+        await supabaseApi.deleteBOMFile(bomId);
+        // Refresh data to get updated BOM files
+        window.location.reload();
+      } catch (err) {
+        alert('Erro ao remover ficheiro BOM');
+      }
+    }
   };
 
-  const handleUpdateFlags = (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
-    setProducoes(prev => prev.map(p => 
-      p.id === id ? { ...p, ...flags } : p
-    ));
+  const handleUpdateComments = async (producaoId: string, comments: string) => {
+    try {
+      await updateComments(producaoId, comments);
+    } catch (err) {
+      alert('Erro ao atualizar comentários');
+    }
   };
 
-  const handleUpdateProducao = (producaoAtualizada: Producao) => {
-    setProducoes(prev => prev.map(p => 
-      p.id === producaoAtualizada.id ? producaoAtualizada : p
-    ));
+  const handleUpdateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
+    try {
+      await updateFlags(id, flags);
+    } catch (err) {
+      alert('Erro ao atualizar flags');
+    }
+  };
+
+  const handleUpdateProducao = async (producaoAtualizada: Producao) => {
+    try {
+      await updateProducao(producaoAtualizada.id, producaoAtualizada);
+    } catch (err) {
+      alert('Erro ao atualizar produção');
+    }
     setEditModal({ isOpen: false, producao: null });
   };
 
@@ -91,6 +108,31 @@ const PrepararComponentes: React.FC = () => {
     
     return { total, aguardaComponentes, faltaComponentes, desenvolvimento };
   }, [producoesPendentes]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="flex items-center space-x-3">
+          <Package2 className="w-6 h-6 text-red-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-red-900">Erro ao carregar dados</h3>
+            <p className="text-red-700">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

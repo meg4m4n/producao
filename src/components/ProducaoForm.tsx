@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, Save, Package, Plus, Trash2, Copy } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
-import { etapas, estados, clientes } from '../data/mockData';
+import { etapas, estados } from '../data/mockData';
+import { useClientes } from '../hooks/useSupabaseData';
 
 interface ProducaoFormProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ interface TabelaItem {
 }
 
 const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, producao }) => {
+  const { clientes, loading: clientesLoading } = useClientes();
+  
   // Converter variantes para formato de tabela
   const variantesToTabela = (variantes: any[]): TabelaItem[] => {
     const items: TabelaItem[] = [];
@@ -81,7 +84,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
   const [novaCor, setNovaCor] = useState('');
   const [novoTamanho, setNovoTamanho] = useState('');
 
-  const clienteSelecionado = clientes.find(c => c.nome === formData.cliente);
+  const clienteSelecionado = clientes?.find(c => c.nome === formData.cliente);
   const marcasDisponiveis = clienteSelecionado?.marcas || [];
 
   // Obter cores e tamanhos únicos
@@ -263,9 +266,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 onChange={(e) => handleClienteChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
+                disabled={clientesLoading}
               >
-                <option value="">Selecionar cliente</option>
-                {clientes.map(cliente => (
+                <option value="">{clientesLoading ? 'Carregando...' : 'Selecionar cliente'}</option>
+                {clientes?.map(cliente => (
                   <option key={cliente.id} value={cliente.nome}>{cliente.nome}</option>
                 ))}
               </select>
