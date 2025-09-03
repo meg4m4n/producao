@@ -206,29 +206,25 @@ export const getProducoes = async (): Promise<Producao[]> => {
 
 export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Producao> => {
   try {
-    // Get marca and cliente IDs
-    const { data: marca, error: marcaError } = await supabase
+    // Get marca ID by name and client name
+    const { data: marcas, error: marcaError } = await supabase
       .from('marcas')
-      .select('id, cliente_id')
+      .select('id, cliente_id, clientes!inner(nome)')
       .eq('nome', producao.marca)
-      .single();
+      .eq('clientes.nome', producao.cliente);
 
-    if (marcaError) throw marcaError;
+    if (marcaError || !marcas || marcas.length === 0) {
+      throw new Error(`Marca "${producao.marca}" não encontrada para o cliente "${producao.cliente}"`);
+    }
 
-    const { data: cliente, error: clienteError } = await supabase
-      .from('clientes')
-      .select('id')
-      .eq('nome', producao.cliente)
-      .single();
-
-    if (clienteError) throw clienteError;
+    const marca = marcas[0];
 
     // Insert production
     const { data: novaProducao, error: producaoError } = await supabase
       .from('producoes')
       .insert({
         marca_id: marca.id,
-        cliente_id: cliente.id,
+        cliente_id: marca.cliente_id,
         referencia_interna: producao.referenciaInterna,
         referencia_cliente: producao.referenciaCliente,
         descricao: producao.descricao,
@@ -286,29 +282,25 @@ export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Pr
 
 export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>): Promise<Producao> => {
   try {
-    // Get marca and cliente IDs
-    const { data: marca, error: marcaError } = await supabase
+    // Get marca ID by name and client name
+    const { data: marcas, error: marcaError } = await supabase
       .from('marcas')
-      .select('id, cliente_id')
+      .select('id, cliente_id, clientes!inner(nome)')
       .eq('nome', producao.marca)
-      .single();
+      .eq('clientes.nome', producao.cliente);
 
-    if (marcaError) throw marcaError;
+    if (marcaError || !marcas || marcas.length === 0) {
+      throw new Error(`Marca "${producao.marca}" não encontrada para o cliente "${producao.cliente}"`);
+    }
 
-    const { data: cliente, error: clienteError } = await supabase
-      .from('clientes')
-      .select('id')
-      .eq('nome', producao.cliente)
-      .single();
-
-    if (clienteError) throw clienteError;
+    const marca = marcas[0];
 
     // Update production
     const { error: producaoError } = await supabase
       .from('producoes')
       .update({
         marca_id: marca.id,
-        cliente_id: cliente.id,
+        cliente_id: marca.cliente_id,
         referencia_interna: producao.referenciaInterna,
         referencia_cliente: producao.referenciaCliente,
         descricao: producao.descricao,

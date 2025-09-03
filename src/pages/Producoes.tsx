@@ -87,6 +87,20 @@ const Producoes: React.FC = () => {
     return { total, emProducao, comProblemas, urgentes, prontas, porEtapa };
   }, [producoes]);
 
+  const producoesOrdenadas = useMemo(() => {
+    return [...producoes].sort((a, b) => {
+      // Primeiro ordenar por urgência
+      const aUrgent = isUrgent(a.dataEstimadaEntrega);
+      const bUrgent = isUrgent(b.dataEstimadaEntrega);
+      
+      if (aUrgent && !bUrgent) return -1;
+      if (!aUrgent && bUrgent) return 1;
+      
+      // Depois por data de início (mais recente primeiro)
+      return new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime();
+    });
+  }, [producoes]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -111,20 +125,6 @@ const Producoes: React.FC = () => {
       </div>
     );
   }
-
-  const producoesOrdenadas = useMemo(() => {
-    return [...producoes].sort((a, b) => {
-      // Primeiro ordenar por urgência
-      const aUrgent = isUrgent(a.dataEstimadaEntrega);
-      const bUrgent = isUrgent(b.dataEstimadaEntrega);
-      
-      if (aUrgent && !bUrgent) return -1;
-      if (!aUrgent && bUrgent) return 1;
-      
-      // Depois por data de início (mais recente primeiro)
-      return new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime();
-    });
-  }, [producoes]);
 
   return (
     <div className="space-y-6">

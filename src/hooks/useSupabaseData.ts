@@ -40,9 +40,11 @@ export const useProducoes = () => {
     try {
       const producaoAtualizada = await supabaseApi.updateProducao(id, producao);
       setProducoes(prev => prev.map(p => p.id === id ? producaoAtualizada : p));
+      await fetchProducoes(); // Refresh data to ensure consistency
       return producaoAtualizada;
     } catch (err) {
       setError('Erro ao atualizar produção');
+      console.error('Update error:', err);
       throw err;
     }
   };
