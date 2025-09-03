@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes blink-red {
+@keyframes blink-problems {
   0%, 100% {
     background-color: rgb(254 242 242);
     border-color: rgb(252 165 165);
@@ -13,6 +13,6 @@
   }
 }
 
-.blink-red {
-  animation: blink-red 2s infinite;
+.blink-problems {
+  animation: blink-problems 2s infinite;
 }

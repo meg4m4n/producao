@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit, ChevronDown, ChevronUp } from 'lucide-react';
 import { etapas } from '../data/mockData';
 import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
@@ -21,6 +21,8 @@ const Producoes: React.FC = () => {
     isOpen: boolean;
     producao?: Producao;
   }>({ isOpen: false });
+  
+  const [dashboardCollapsed, setDashboardCollapsed] = useState(false);
 
   const handleCreateProducao = async (novaProducao: Omit<Producao, 'id'>) => {
     try {
@@ -195,17 +197,35 @@ const Producoes: React.FC = () => {
 
         {/* Estatísticas por Etapa (Compactas) */}
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Distribuição por Etapas</h3>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-1">
-            {etapas.map(etapa => (
-              <div key={etapa} className="text-center">
-                <div className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(etapa)} mb-1`}>
-                  {estatisticas.porEtapa[etapa]}
-                </div>
-                <div className="text-xs text-gray-600 truncate">{etapa}</div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-700">Distribuição por Etapas</h3>
+            <button
+              onClick={() => setDashboardCollapsed(!dashboardCollapsed)}
+              className="flex items-center space-x-1 px-2 py-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+            >
+              <span className="text-xs">
+                {dashboardCollapsed ? 'Expandir' : 'Comprimir'}
+              </span>
+              {dashboardCollapsed ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronUp className="w-4 h-4" />
+              )}
+            </button>
           </div>
+          
+          {!dashboardCollapsed && (
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-1">
+              {etapas.map(etapa => (
+                <div key={etapa} className="text-center">
+                  <div className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(etapa)} mb-1`}>
+                    {estatisticas.porEtapa[etapa]}
+                  </div>
+                  <div className="text-xs text-gray-600 truncate">{etapa}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

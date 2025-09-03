@@ -153,11 +153,13 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             key={producao.id} 
             className={`
               rounded-lg border p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
-              ${(producao.problemas || false) || producao.estado === 'FALTA COMPONENTES'
-                ? 'blink-red' 
-                : isUrgent(producao.dataEstimadaEntrega)
-                  ? 'bg-red-50 border-red-300 border-l-4 border-l-red-500'
-                  : 'bg-white border-gray-200'
+              ${(producao.problemas || false)
+                ? 'blink-problems' 
+                : producao.estado === 'FALTA COMPONENTES'
+                  ? 'bg-yellow-100 border-yellow-300'
+                  : isUrgent(producao.dataEstimadaEntrega)
+                    ? 'bg-red-50 border-red-300 border-l-4 border-l-red-500'
+                    : 'bg-white border-gray-200'
               }
             `}
           >
