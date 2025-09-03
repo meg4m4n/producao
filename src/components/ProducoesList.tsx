@@ -78,8 +78,20 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
     return tamanhos.join(', ');
   };
 
-  const handleFlagChange = (producaoId: string, flag: 'problemas' | 'emProducao', value: boolean) => {
-    onUpdateFlags?.(producaoId, { [flag]: value });
+  const handleFlagChange = (producaoId: string, flag: 'problemas' | 'emProducao' | 'faltaComponentes', value: boolean) => {
+    if (flag === 'faltaComponentes') {
+      // Handle falta componentes state change
+      const producao = producoes.find(p => p.id === producaoId);
+      if (producao && onEdit) {
+        const updatedProducao = {
+          ...producao,
+          estado: value ? 'FALTA COMPONENTES' as Estado : 'Aguarda Componentes' as Estado
+        };
+        onEdit(updatedProducao);
+      }
+    } else {
+      onUpdateFlags?.(producaoId, { [flag]: value });
+    }
   };
 
   const producoesFiltradas = useMemo(() => {
@@ -186,6 +198,17 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
                   title="Marcar como em produção"
                 />
                 <Package className={`w-3 h-3 ${producao.emProducao ? 'text-green-600' : 'text-gray-300'}`} />
+              </div>
+              <div className="flex items-center space-x-1">
+                <input
+                  type="checkbox"
+                  id={`falta-componentes-${producao.id}`}
+                  checked={producao.estado === 'FALTA COMPONENTES'}
+                  onChange={(e) => handleFlagChange(producao.id, 'faltaComponentes', e.target.checked)}
+                  className="w-3 h-3 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                  title="Marcar como falta componentes"
+                />
+                <Clock className={`w-3 h-3 ${producao.estado === 'FALTA COMPONENTES' ? 'text-yellow-600' : 'text-gray-300'}`} />
               </div>
             </div>
 

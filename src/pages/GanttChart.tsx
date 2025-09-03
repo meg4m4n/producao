@@ -1,13 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calendar, ZoomIn, ZoomOut, RotateCcw, Building, MapPin, Edit } from 'lucide-react';
+import { Calendar, ZoomIn, ZoomOut, RotateCcw, Building, MapPin, Edit, CalendarDays, CalendarRange } from 'lucide-react';
 import { Producao } from '../types';
 import { useProducoes } from '../hooks/useSupabaseData';
 import EditDateModal from '../components/EditDateModal';
+
+type ViewMode = 'day' | 'week' | 'month';
 
 const GanttChart: React.FC = () => {
   const { producoes, loading, error, updateProducao } = useProducoes();
   const [zoomLevel, setZoomLevel] = useState(1);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>('day');
   const timelineRef = useRef<HTMLDivElement>(null);
   const [editDateModal, setEditDateModal] = useState<{
     isOpen: boolean;
@@ -36,16 +39,17 @@ const GanttChart: React.FC = () => {
   const timelineDates = useMemo(() => {
     const dates = [];
     const current = new Date(dateRange.minDate);
+    const increment = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 30;
     
     while (current <= dateRange.maxDate) {
       dates.push(new Date(current));
-      current.setDate(current.getDate() + 1);
+      current.setDate(current.getDate() + increment);
     }
     
     return dates;
   }, [dateRange]);
 
-  const dayWidth = 30 * zoomLevel;
+  const dayWidth = viewMode === 'day' ? 30 * zoomLevel : viewMode === 'week' ? 120 * zoomLevel : 200 * zoomLevel;
   const totalWidth = timelineDates.length * dayWidth;
 
   const getQuantidadeTotal = (producao: Producao): number => {
@@ -55,13 +59,29 @@ const GanttChart: React.FC = () => {
   };
 
   const getDatePosition = (date: Date): number => {
-    const daysDiff = Math.floor((date.getTime() - dateRange.minDate.getTime()) / (1000 * 60 * 60 * 24));
-    return daysDiff * dayWidth;
+    if (viewMode === 'day') {
+      const daysDiff = Math.floor((date.getTime() - dateRange.minDate.getTime()) / (1000 * 60 * 60 * 24));
+      return daysDiff * (30 * zoomLevel);
+    } else if (viewMode === 'week') {
+      const weeksDiff = Math.floor((date.getTime() - dateRange.minDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
+      return weeksDiff * (120 * zoomLevel);
+    } else {
+      const monthsDiff = Math.floor((date.getTime() - dateRange.minDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      return monthsDiff * (200 * zoomLevel);
+    }
   };
 
   const getBarWidth = (startDate: Date, endDate: Date): number => {
-    const daysDiff = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(daysDiff * dayWidth, dayWidth);
+    if (viewMode === 'day') {
+      const daysDiff = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.max(daysDiff * (30 * zoomLevel), 30 * zoomLevel);
+    } else if (viewMode === 'week') {
+      const weeksDiff = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
+      return Math.max(weeksDiff * (120 * zoomLevel), 120 * zoomLevel);
+    } else {
+      const monthsDiff = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      return Math.max(monthsDiff * (200 * zoomLevel), 200 * zoomLevel);
+    }
   };
 
   const getBarColor = (producao: Producao): string => {
@@ -93,10 +113,21 @@ const GanttChart: React.FC = () => {
   };
 
   const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('pt-PT', { 
-      day: '2-digit', 
-      month: '2-digit' 
-    });
+    if (viewMode === 'day') {
+      return date.toLocaleDateString('pt-PT', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      });
+    } else if (viewMode === 'week') {
+      const weekEnd = new Date(date);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      return `${date.getDate()}/${date.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
+    } else {
+      return date.toLocaleDateString('pt-PT', { 
+        month: 'short', 
+        year: '2-digit' 
+      });
+    }
   };
 
   const formatMonth = (date: Date): string => {
@@ -210,7 +241,40 @@ const GanttChart: React.FC = () => {
           </div>
           
           {/* Zoom Controls */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* View Mode Selector */}
+            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('day')}
+                className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Dia</span>
+              </button>
+              <button
+                onClick={() => setViewMode('week')}
+                className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span>Semana</span>
+              </button>
+              <button
+                onClick={() => setViewMode('month')}
+                className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <CalendarRange className="w-4 h-4" />
+                <span>Mês</span>
+              </button>
+            </div>
+            
+            {/* Zoom Controls */}
+            <div className="flex items-center space-x-2">
             <button
               onClick={handleZoomOut}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -235,6 +299,7 @@ const GanttChart: React.FC = () => {
             >
               <RotateCcw className="w-5 h-5" />
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -255,10 +320,10 @@ const GanttChart: React.FC = () => {
             </div>
             
             {/* Timeline Header */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1">
               <div 
                 ref={timelineRef}
-                className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 max-h-[600px]"
                 onScroll={(e) => setScrollPosition(e.currentTarget.scrollLeft)}
               >
                 <div style={{ width: totalWidth }}>
@@ -298,7 +363,7 @@ const GanttChart: React.FC = () => {
         </div>
 
         {/* Gantt Rows */}
-        <div className="max-h-[600px] overflow-y-auto">
+        <div className="max-h-[500px] overflow-y-auto">
           {producoes.map((producao, index) => (
             <div key={producao.id} className="flex border-b border-gray-100 hover:bg-gray-50">
               {/* Left Panel */}
@@ -349,7 +414,7 @@ const GanttChart: React.FC = () => {
               </div>
               
               {/* Timeline */}
-              <div className="flex-1 relative overflow-hidden">
+              <div className="flex-1 relative">
                 <div 
                   className="overflow-x-auto h-16 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
                   style={{ scrollLeft: scrollPosition }}

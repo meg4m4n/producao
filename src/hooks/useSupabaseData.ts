@@ -58,8 +58,21 @@ export const useProducoes = () => {
     }
   };
 
-  const updateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
+  const updateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }) => {
     try {
+      // Handle falta componentes state change
+      if (flags.faltaComponentes !== undefined) {
+        const producao = producoes.find(p => p.id === id);
+        if (producao) {
+          const updatedProducao = {
+            ...producao,
+            estado: flags.faltaComponentes ? 'FALTA COMPONENTES' as const : 'Aguarda Componentes' as const
+          };
+          await updateProducao(id, updatedProducao);
+          return;
+        }
+      }
+      
       await supabaseApi.updateProducaoFlags(id, flags);
       setProducoes(prev => prev.map(p => p.id === id ? { 
         ...p, 

@@ -377,11 +377,14 @@ export const deleteProducao = async (id: string): Promise<void> => {
   }
 };
 
-export const updateProducaoFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean }): Promise<void> => {
+export const updateProducaoFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }): Promise<void> => {
   try {
     const updateData: any = {};
     if (flags.problemas !== undefined) updateData.problemas = flags.problemas;
     if (flags.emProducao !== undefined) updateData.em_producao = flags.emProducao;
+    if (flags.faltaComponentes !== undefined) {
+      updateData.estado = flags.faltaComponentes ? 'FALTA COMPONENTES' : 'Aguarda Componentes';
+    }
 
     const { error } = await supabase
       .from('producoes')

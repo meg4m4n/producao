@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { etapas } from '../data/mockData';
 import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
@@ -79,7 +79,7 @@ const Producoes: React.FC = () => {
     const emProducao = producoes.filter(p => p.emProducao || false).length;
     const comProblemas = producoes.filter(p => p.problemas || false).length;
     const faltaComponentes = producoes.filter(p => p.estado === 'FALTA COMPONENTES').length;
-    const faltaComentarios = producoes.filter(p => p.estado === 'Aguarda Comentários').length;
+    const faltaComentarios = producoes.filter(p => p.estado === 'Aguarda Comentários' || !p.comments || p.comments.trim() === '').length;
     
     const porEtapa = etapas.reduce((acc, etapa) => {
       acc[etapa] = producoes.filter(p => p.etapa === etapa).length;
@@ -153,7 +153,7 @@ const Producoes: React.FC = () => {
         </div>
 
         {/* Estatísticas Principais */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
               <TrendingUp className="w-6 h-6 text-green-600" />
@@ -174,22 +174,22 @@ const Producoes: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <Clock className="w-5 h-5 text-amber-600" />
+              <Clock className="w-5 h-5 text-yellow-600" />
               <div>
-                <div className="text-lg font-bold text-amber-700">{estatisticas.faltaComponentes}</div>
-                <div className="text-sm text-amber-600">Falta Componentes</div>
+                <div className="text-lg font-bold text-yellow-700">{estatisticas.faltaComponentes}</div>
+                <div className="text-sm text-yellow-600">Falta Componentes</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <MessageSquare className="w-5 h-5 text-blue-600" />
               <div>
-                <div className="text-lg font-bold text-green-700">{estatisticas.faltaComentarios}</div>
-                <div className="text-sm text-green-600">Falta Comentários</div>
+                <div className="text-lg font-bold text-blue-700">{estatisticas.faltaComentarios}</div>
+                <div className="text-sm text-blue-600">Falta Comentários</div>
               </div>
             </div>
           </div>

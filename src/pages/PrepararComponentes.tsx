@@ -37,17 +37,20 @@ const PrepararComponentes: React.FC = () => {
     const pendentes = producoes.filter(producao => 
       producao.estado === 'Aguarda Componentes' || 
       producao.estado === 'FALTA COMPONENTES' ||
-      (producao.etapa === 'Desenvolvimento' && producao.estado === 'Modelagem')
+      (producao.etapa === 'Desenvolvimento' && producao.estado === 'Modelagem') ||
+      (!producao.comments || producao.comments.trim() === '')
     );
     
     const completas = producoes.filter(producao => 
-      producao.estado === 'Corte' ||
-      producao.estado === 'Confecção' ||
-      producao.estado === 'Transfers' ||
-      producao.estado === 'Serviços Externos' ||
-      producao.estado === 'Embalamento' ||
-      producao.etapa === 'Pronto' ||
-      producao.etapa === 'Enviado'
+      (producao.estado === 'Corte' ||
+       producao.estado === 'Confecção' ||
+       producao.estado === 'Transfers' ||
+       producao.estado === 'Serviços Externos' ||
+       producao.estado === 'Embalamento' ||
+       producao.etapa === 'Pronto' ||
+       producao.etapa === 'Enviado') &&
+      producao.estado !== 'FALTA COMPONENTES' &&
+      producao.comments && producao.comments.trim() !== ''
     );
     
     return { producoesPendentes: pendentes, producoesCompletas: completas };
