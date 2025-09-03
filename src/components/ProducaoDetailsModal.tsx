@@ -35,7 +35,7 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
           <div className="flex items-center space-x-3">
             <Package className="w-6 h-6 text-blue-600" />
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{producao.referenciaInterna}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Registo Completo - {producao.referenciaInterna}</h2>
               <p className="text-gray-600">{producao.marca} • {producao.cliente}</p>
             </div>
           </div>

@@ -313,14 +313,14 @@ const PrepararComponentes: React.FC = () => {
                       <button
                         onClick={() => setEditModal({ isOpen: true, producao })}
                         className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                        title="Editar produção"
+                        title="Editar registo completo"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDetailsModal({ isOpen: true, producao })}
                         className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                        title="Ver detalhes"
+                        title="Ver registo completo"
                       >
                         <Eye className="w-4 h-4" />
                       </button>

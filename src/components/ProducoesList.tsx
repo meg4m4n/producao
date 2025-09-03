@@ -257,10 +257,10 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
               <button
                 onClick={() => setDetailsModal({ isOpen: true, producao })}
-                className="flex items-center space-x-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
               >
                 <Eye className="w-3 h-3" />
-                <span className="text-xs font-medium">Detalhes</span>
+                <span className="text-xs">Ver Registo Completo</span>
               </button>
               
               {showActions && (
@@ -268,6 +268,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
                   <button
                     onClick={() => onEdit?.(producao)}
                     className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Editar registo completo"
                   >
                     <Edit className="w-3 h-3" />
                   </button>

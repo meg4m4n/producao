@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Package, Activity, Users, Building } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Activity, Users, Building, Search, Filter, Eye } from 'lucide-react';
 import { etapas, estados } from '../data/mockData';
 import EditModal from '../components/EditModal';
 import ProducaoForm from '../components/ProducaoForm';
-import ProducoesList from '../components/ProducoesList';
+import ProducaoDetailsModal from '../components/ProducaoDetailsModal';
 import ClienteForm from '../components/ClienteForm';
-import { Producao, Cliente } from '../types';
+import { Producao, Cliente, Etapa, Estado } from '../types';
 import { useProducoes, useClientes } from '../hooks/useSupabaseData';
 
 type GestaoTab = 'producoes' | 'clientes' | 'etapas' | 'estados';
@@ -33,6 +33,11 @@ const Registos: React.FC = () => {
   const [etapasState, setEtapasState] = useState(etapas);
   const [estadosState, setEstadosState] = useState(estados);
   
+  // Filtros para produções
+  const [filtroEtapa, setFiltroEtapa] = useState<Etapa | 'all'>('all');
+  const [filtroEstado, setFiltroEstado] = useState<Estado | 'all'>('all');
+  const [busca, setBusca] = useState('');
+  
   // Modal states
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
@@ -46,10 +51,31 @@ const Registos: React.FC = () => {
     producao?: Producao;
   }>({ isOpen: false });
 
+  const [producaoDetails, setProducaoDetails] = useState<{
+    isOpen: boolean;
+    producao?: Producao;
+  }>({ isOpen: false });
+
   const [clienteForm, setClienteForm] = useState<{
     isOpen: boolean;
     cliente?: Cliente;
   }>({ isOpen: false });
+
+  // Filtrar produções
+  const producoesFiltradas = React.useMemo(() => {
+    return producoes.filter(producao => {
+      const matchEtapa = filtroEtapa === 'all' || producao.etapa === filtroEtapa;
+      const matchEstado = filtroEstado === 'all' || producao.estado === filtroEstado;
+      const matchBusca = busca === '' || 
+        producao.marca.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.cliente.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.referenciaInterna.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.referenciaCliente.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.descricao.toLowerCase().includes(busca.toLowerCase());
+      
+      return matchEtapa && matchEstado && matchBusca;
+    }).sort((a, b) => new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime());
+  }, [producoes, filtroEtapa, filtroEstado, busca]);
 
   const handleCreateProducao = async (novaProducao: Omit<Producao, 'id'>) => {
     try {
@@ -149,6 +175,43 @@ const Registos: React.FC = () => {
     }
   };
 
+  const getEtapaColor = (etapa: Etapa): string => {
+    const colors = {
+      'Desenvolvimento': 'bg-yellow-100 text-yellow-800',
+      '1º proto': 'bg-orange-100 text-orange-800',
+      '2º proto': 'bg-orange-100 text-orange-800',
+      'Size-Set': 'bg-blue-100 text-blue-800',
+      'PPS': 'bg-purple-100 text-purple-800',
+      'Produção': 'bg-indigo-100 text-indigo-800',
+      'Pronto': 'bg-green-100 text-green-800',
+      'Enviado': 'bg-gray-100 text-gray-800',
+    };
+    return colors[etapa];
+  };
+
+  const getEstadoColor = (estado: Estado): string => {
+    const colors = {
+      'Modelagem': 'bg-yellow-100 text-yellow-700',
+      'Aguarda Componentes': 'bg-orange-100 text-orange-700',
+      'FALTA COMPONENTES': 'bg-red-100 text-red-700',
+      'Aguarda Malha': 'bg-orange-100 text-orange-700',
+      'Com Defeito': 'bg-red-100 text-red-700',
+      'Aguarda Comentários': 'bg-amber-100 text-amber-700',
+      'Corte': 'bg-blue-100 text-blue-700',
+      'Confecção': 'bg-indigo-100 text-indigo-700',
+      'Transfers': 'bg-purple-100 text-purple-700',
+      'Serviços Externos': 'bg-teal-100 text-teal-700',
+      'Embalamento': 'bg-green-100 text-green-700',
+    };
+    return colors[estado];
+  };
+
+  const getQuantidadeTotal = (producao: Producao): number => {
+    return producao.variantes.reduce((total, variante) => {
+      return total + Object.values(variante.tamanhos).reduce((sum, qty) => sum + qty, 0);
+    }, 0);
+  };
+
   const tabs = [
     { id: 'producoes' as GestaoTab, label: 'Produções', icon: Package },
     { id: 'clientes' as GestaoTab, label: 'Clientes', icon: Users },
@@ -168,14 +231,201 @@ const Registos: React.FC = () => {
           <span>Nova Produção</span>
         </button>
       </div>
-      
-      <ProducoesList
-        producoes={producoes}
-        onEdit={(producao) => setProducaoForm({ isOpen: true, producao })}
-        onDelete={handleDeleteProducao}
-        onUpdateFlags={handleUpdateFlags}
-        showActions={true}
-      />
+
+      {/* Filtros */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Busca */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por marca, cliente, referência..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Filtro por Etapa */}
+          <div className="relative">
+            <Filter className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <select
+              value={filtroEtapa}
+              onChange={(e) => setFiltroEtapa(e.target.value as Etapa | 'all')}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">Todas as etapas</option>
+              {etapas.map(etapa => (
+                <option key={etapa} value={etapa}>{etapa}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro por Estado */}
+          <div className="relative">
+            <Filter className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value as Estado | 'all')}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">Todos os estados</option>
+              {estados.map(estado => (
+                <option key={estado} value={estado}>{estado}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de Produções */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Referência
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Marca / Cliente
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Descrição
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Etapa
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Quantidade
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Entrega
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {producoesFiltradas.map((producao) => (
+                <tr key={producao.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{producao.referenciaInterna}</div>
+                      <div className="text-sm text-gray-500">{producao.referenciaCliente}</div>
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{producao.marca}</div>
+                    <div className="text-sm text-gray-500">{producao.cliente}</div>
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900 max-w-xs truncate" title={producao.descricao}>
+                      {producao.descricao}
+                    </div>
+                    <div className="text-sm text-gray-500">{producao.tipoPeca} • {producao.genero}</div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getEtapaColor(producao.etapa)}`}>
+                      {producao.etapa}
+                    </span>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getEstadoColor(producao.estado)}`}>
+                      {producao.estado}
+                    </span>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="text-sm font-medium text-blue-600">{getQuantidadeTotal(producao)}</div>
+                    <div className="text-xs text-gray-500">unidades</div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Início: {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="flex flex-col space-y-1">
+                      {producao.emProducao && (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Em Produção
+                        </span>
+                      )}
+                      {producao.problemas && (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                          Com Problemas
+                        </span>
+                      )}
+                      {!producao.emProducao && !producao.problemas && (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                          Parado
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <button
+                        onClick={() => setProducaoDetails({ isOpen: true, producao })}
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Ver detalhes completos"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setProducaoForm({ isOpen: true, producao })}
+                        className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                        title="Editar produção"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProducao(producao.id)}
+                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Remover produção"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {producoesFiltradas.length === 0 && (
+          <div className="text-center py-12">
+            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma produção encontrada</h3>
+            <p className="text-gray-500">
+              {busca || filtroEtapa !== 'all' || filtroEstado !== 'all' 
+                ? 'Tente ajustar os filtros de pesquisa' 
+                : 'Adicione uma nova produção para começar'
+              }
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -391,6 +641,18 @@ const Registos: React.FC = () => {
         onClose={() => setProducaoForm({ isOpen: false })}
         onSave={producaoForm.producao ? handleUpdateProducao : handleCreateProducao}
         producao={producaoForm.producao}
+      />
+
+      {/* Modal de Detalhes da Produção */}
+      <ProducaoDetailsModal
+        isOpen={producaoDetails.isOpen}
+        onClose={() => setProducaoDetails({ isOpen: false })}
+        producao={producaoDetails.producao || null}
+        onUpdateFlags={(flags) => {
+          if (producaoDetails.producao) {
+            handleUpdateFlags(producaoDetails.producao.id, flags);
+          }
+        }}
       />
 
       {/* Modal de Cliente */}
