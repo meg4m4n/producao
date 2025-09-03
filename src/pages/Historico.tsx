@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Archive, Trash2, RotateCcw, Search, Filter, Eye, AlertTriangle } from 'lucide-react';
+import { Archive, Trash2, RotateCcw, Search, Filter, Eye, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados } from '../data/mockData';
 import ProducaoDetailsModal from '../components/ProducaoDetailsModal';

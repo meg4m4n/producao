@@ -39,8 +39,7 @@ export const useProducoes = () => {
   const updateProducao = async (id: string, producao: Omit<Producao, 'id'>) => {
     try {
       const producaoAtualizada = await supabaseApi.updateProducao(id, producao);
-      setProducoes(prev => prev.map(p => p.id === id ? producaoAtualizada : p));
-      await fetchProducoes(); // Refresh data to ensure consistency
+      setProducoes(prev => prev.map(p => p.id === id ? { ...producaoAtualizada, id } : p));
       return producaoAtualizada;
     } catch (err) {
       setError('Erro ao atualizar produção');
@@ -62,7 +61,11 @@ export const useProducoes = () => {
   const updateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
     try {
       await supabaseApi.updateProducaoFlags(id, flags);
-      setProducoes(prev => prev.map(p => p.id === id ? { ...p, ...flags } : p));
+      setProducoes(prev => prev.map(p => p.id === id ? { 
+        ...p, 
+        problemas: flags.problemas !== undefined ? flags.problemas : p.problemas,
+        emProducao: flags.emProducao !== undefined ? flags.emProducao : p.emProducao
+      } : p));
     } catch (err) {
       setError('Erro ao atualizar flags');
       throw err;

@@ -258,7 +258,7 @@ const GanttChart: React.FC = () => {
             <div className="flex-1 overflow-hidden">
               <div 
                 ref={timelineRef}
-                className="overflow-x-auto"
+                className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
                 onScroll={(e) => setScrollPosition(e.currentTarget.scrollLeft)}
               >
                 <div style={{ width: totalWidth }}>
@@ -298,7 +298,7 @@ const GanttChart: React.FC = () => {
         </div>
 
         {/* Gantt Rows */}
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-[600px] overflow-y-auto">
           {producoes.map((producao, index) => (
             <div key={producao.id} className="flex border-b border-gray-100 hover:bg-gray-50">
               {/* Left Panel */}
@@ -349,9 +349,9 @@ const GanttChart: React.FC = () => {
               </div>
               
               {/* Timeline */}
-              <div className="flex-1 relative">
+              <div className="flex-1 relative overflow-hidden">
                 <div 
-                  className="overflow-x-auto"
+                  className="overflow-x-auto h-16 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
                   style={{ scrollLeft: scrollPosition }}
                 >
                   <div 

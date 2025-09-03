@@ -78,15 +78,15 @@ const Producoes: React.FC = () => {
     const total = producoes.length;
     const emProducao = producoes.filter(p => p.emProducao || false).length;
     const comProblemas = producoes.filter(p => p.problemas || false).length;
-    const urgentes = producoes.filter(p => isUrgent(p.dataEstimadaEntrega)).length;
-    const prontas = producoes.filter(p => p.etapa === 'Pronto' || p.etapa === 'Enviado').length;
+    const faltaComponentes = producoes.filter(p => p.estado === 'FALTA COMPONENTES').length;
+    const faltaComentarios = producoes.filter(p => p.estado === 'Aguarda Comentários').length;
     
     const porEtapa = etapas.reduce((acc, etapa) => {
       acc[etapa] = producoes.filter(p => p.etapa === etapa).length;
       return acc;
     }, {} as Record<Etapa, number>);
     
-    return { total, emProducao, comProblemas, urgentes, prontas, porEtapa };
+    return { total, emProducao, comProblemas, faltaComponentes, faltaComentarios, porEtapa };
   }, [producoes]);
 
   const producoesOrdenadas = useMemo(() => {
@@ -178,8 +178,8 @@ const Producoes: React.FC = () => {
             <div className="flex items-center space-x-3">
               <Clock className="w-5 h-5 text-amber-600" />
               <div>
-                <div className="text-lg font-bold text-amber-700">{estatisticas.urgentes}</div>
-                <div className="text-sm text-amber-600">Entrega Urgente</div>
+                <div className="text-lg font-bold text-amber-700">{estatisticas.faltaComponentes}</div>
+                <div className="text-sm text-amber-600">Falta Componentes</div>
               </div>
             </div>
           </div>
@@ -188,8 +188,8 @@ const Producoes: React.FC = () => {
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <div>
-                <div className="text-lg font-bold text-green-700">{estatisticas.prontas}</div>
-                <div className="text-sm text-green-600">Prontas/Enviadas</div>
+                <div className="text-lg font-bold text-green-700">{estatisticas.faltaComentarios}</div>
+                <div className="text-sm text-green-600">Falta Comentários</div>
               </div>
             </div>
           </div>

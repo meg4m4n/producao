@@ -98,19 +98,15 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
                   id="falta-componentes-detail"
                   checked={producao.estado === 'FALTA COMPONENTES'}
                   onChange={(e) => {
-                    const newEstado = e.target.checked ? 'FALTA COMPONENTES' : 'Aguarda Componentes';
-                    onUpdateFlags?.({ problemas: e.target.checked });
-                    // Update local state immediately for visual feedback
-                    if (producao) {
-                      producao.estado = newEstado;
-                      producao.problemas = e.target.checked;
-                    }
+                    // This checkbox is read-only, showing current state from database
+                    // Estado changes should be done through the main form
                   }}
+                  disabled
                   className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                 />
                 <label htmlFor="falta-componentes-detail" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
                   <AlertTriangle className="w-4 h-4 text-orange-600" />
-                  <span>Falta Componentes</span>
+                  <span>Falta Componentes (Estado atual: {producao.estado})</span>
                 </label>
               </div>
             </div>

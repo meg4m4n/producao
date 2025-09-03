@@ -5,6 +5,8 @@ import Registos from './pages/Registos';
 import PrepararComponentes from './pages/PrepararComponentes';
 import GanttChart from './pages/GanttChart';
 import Historico from './pages/Historico';
+import AppsLomartex from './pages/AppsLomartex';
+import ControloQualidade from './pages/ControloQualidade';
 import { PageType } from './types';
 
 function App() {
@@ -22,6 +24,10 @@ function App() {
         return <Registos />;
       case 'historico':
         return <Historico />;
+      case 'apps-lomartex':
+        return <AppsLomartex />;
+      case 'controlo-qualidade':
+        return <ControloQualidade />;
       default:
         return <Producoes />;
     }

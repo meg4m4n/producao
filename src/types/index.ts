@@ -11,7 +11,7 @@ export type Estado =
   | 'Serviços Externos'
   | 'Embalamento';
 
-export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico';
+export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade';
 
 export interface BOMFile {
   id: string;
