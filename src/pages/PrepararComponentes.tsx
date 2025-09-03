@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
-import { Producao, BOMFile } from '../types';
-import BOMUploadModal from '../components/BOMUploadModal';
-import CommentsModal from '../components/CommentsModal';
+import { Package2, MessageSquare, CheckCircle, Eye, Clock } from 'lucide-react';
+import { Producao, BOMFile, ComponenteHistorico } from '../types';
 import ProducaoDetailsModal from '../components/ProducaoDetailsModal';
-import ProducaoForm from '../components/ProducaoForm';
 import ComponenteHistoricoModal from '../components/ComponenteHistoricoModal';
+import ComponenteCommentsModal from '../components/ComponenteCommentsModal';
 import { useProducoes } from '../hooks/useSupabaseData';
 import * as supabaseApi from '../services/supabaseApi';
 
@@ -19,22 +17,7 @@ const PrepararComponentes: React.FC = () => {
     updateComments 
   } = useProducoes();
   
-  const [bomModal, setBomModal] = useState<{
-    isOpen: boolean;
-    producao: Producao | null;
-  }>({ isOpen: false, producao: null });
-  
-  const [commentsModal, setCommentsModal] = useState<{
-    isOpen: boolean;
-    producao: Producao | null;
-  }>({ isOpen: false, producao: null });
-
   const [detailsModal, setDetailsModal] = useState<{
-    isOpen: boolean;
-    producao: Producao | null;
-  }>({ isOpen: false, producao: null });
-
-  const [editModal, setEditModal] = useState<{
     isOpen: boolean;
     producao: Producao | null;
   }>({ isOpen: false, producao: null });
@@ -44,67 +27,39 @@ const PrepararComponentes: React.FC = () => {
     producao: Producao | null;
   }>({ isOpen: false, producao: null });
 
-  // Filtrar produções que precisam de componentes
-  const producoesPendentes = useMemo(() => {
-    return producoes.filter(producao => 
+  const [commentsModal, setCommentsModal] = useState<{
+    isOpen: boolean;
+    producao: Producao | null;
+  }>({ isOpen: false, producao: null });
+
+  // Filtrar e categorizar produções
+  const { producoesPendentes, producoesCompletas } = useMemo(() => {
+    const pendentes = producoes.filter(producao => 
       producao.estado === 'Aguarda Componentes' || 
       producao.estado === 'FALTA COMPONENTES' ||
       (producao.etapa === 'Desenvolvimento' && producao.estado === 'Modelagem')
     );
+    
+    const completas = producoes.filter(producao => 
+      producao.estado === 'Corte' ||
+      producao.estado === 'Confecção' ||
+      producao.estado === 'Transfers' ||
+      producao.estado === 'Serviços Externos' ||
+      producao.estado === 'Embalamento' ||
+      producao.etapa === 'Pronto' ||
+      producao.etapa === 'Enviado'
+    );
+    
+    return { producoesPendentes: pendentes, producoesCompletas: completas };
   }, [producoes]);
 
-  const handleUploadBOM = async (producaoId: string, files: BOMFile[]) => {
-    try {
-      await supabaseApi.createBOMFiles(producaoId, files);
-      // Add to history
-      addToHistory(producaoId, 'upload_bom', `Upload de ${files.length} ficheiro(s) BOM`, { files: files.map(f => f.name) });
-      // Refresh data to get updated BOM files
-      window.location.reload();
-    } catch (err) {
-      alert('Erro ao fazer upload dos ficheiros BOM');
-    }
-  };
-
-  const handleDeleteBOM = async (producaoId: string, bomId: string) => {
-    if (confirm('Tem certeza que deseja remover este ficheiro BOM?')) {
-      try {
-        await supabaseApi.deleteBOMFile(bomId);
-        // Add to history
-        addToHistory(producaoId, 'remover_bom', 'Ficheiro BOM removido');
-        // Refresh data to get updated BOM files
-        window.location.reload();
-      } catch (err) {
-        alert('Erro ao remover ficheiro BOM');
-      }
-    }
-  };
-
-  const handleUpdateComments = async (producaoId: string, comments: string) => {
-    try {
-      await updateComments(producaoId, comments);
-      // Add to history
-      addToHistory(producaoId, 'comentario', 'Comentários atualizados', { comments });
-    } catch (err) {
-      alert('Erro ao atualizar comentários');
-    }
-  };
-
-  const handleUpdateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => {
-    try {
-      await updateFlags(id, flags);
-    } catch (err) {
-      alert('Erro ao atualizar flags');
-    }
-  };
-
-  const handleUpdateProducao = async (producaoAtualizada: Producao) => {
-    try {
-      await updateProducao(producaoAtualizada.id, producaoAtualizada);
-    } catch (err) {
-      alert('Erro ao atualizar produção');
-    }
-    setEditModal({ isOpen: false, producao: null });
-  };
+  const estatisticas = useMemo(() => {
+    const totalPendentes = producoesPendentes.length;
+    const aguardaComponentes = producoesPendentes.filter(p => p.estado === 'Aguarda Componentes').length;
+    const completos = producoesCompletas.length;
+    
+    return { totalPendentes, aguardaComponentes, completos };
+  }, [producoesPendentes, producoesCompletas]);
 
   const handleMarcarCompleto = async (producao: Producao) => {
     if (confirm(`Marcar componentes como completos para "${producao.referenciaInterna}"?`)) {
@@ -124,29 +79,54 @@ const PrepararComponentes: React.FC = () => {
     }
   };
 
-  // Mock function to add to history - in real app this would save to database
+  const handleUpdateComments = async (producaoId: string, comments: string, files?: File[]) => {
+    try {
+      await updateComments(producaoId, comments);
+      
+      // Handle file uploads if any
+      if (files && files.length > 0) {
+        const bomFiles: BOMFile[] = files.map(file => ({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: file.name,
+          url: `https://storage.example.com/comments/${file.name}`,
+          uploadDate: new Date().toISOString()
+        }));
+        
+        await supabaseApi.createBOMFiles(producaoId, bomFiles);
+        addToHistory(producaoId, 'upload_bom', `Upload de ${files.length} ficheiro(s) anexo(s) aos comentários`, { files: files.map(f => f.name) });
+      }
+      
+      addToHistory(producaoId, 'comentario', 'Comentários atualizados', { comments });
+      
+      // Close modal after successful save
+      setCommentsModal({ isOpen: false, producao: null });
+    } catch (err) {
+      alert('Erro ao atualizar comentários');
+    }
+  };
+
+  // Mock function to add to history
   const addToHistory = (producaoId: string, tipo: any, descricao: string, detalhes?: any) => {
     const historicoItem = {
       id: Date.now().toString(),
       producaoId,
       tipo,
       descricao,
-      usuario: 'Utilizador Atual', // In real app, get from auth
+      usuario: 'Utilizador Atual',
       timestamp: new Date().toISOString(),
       detalhes
     };
     console.log('Histórico adicionado:', historicoItem);
   };
 
-  // Mock function to get history - in real app this would fetch from database
+  // Mock function to get history
   const getHistoricoForProducao = (producaoId: string) => {
-    // Mock data for demonstration
     return [
       {
         id: '1',
         producaoId,
         tipo: 'comentario' as const,
-        descricao: 'Comentários iniciais adicionados',
+        descricao: 'Comentários iniciais sobre componentes',
         usuario: 'João Silva',
         timestamp: '2025-01-28T10:30:00Z'
       },
@@ -154,18 +134,10 @@ const PrepararComponentes: React.FC = () => {
         id: '2',
         producaoId,
         tipo: 'upload_bom' as const,
-        descricao: 'Upload de 2 ficheiro(s) BOM',
+        descricao: 'Upload de 2 ficheiro(s) anexo(s)',
         usuario: 'Maria Santos',
         timestamp: '2025-01-28T14:15:00Z',
-        detalhes: { files: ['BOM_v1.pdf', 'Especificacoes.pdf'] }
-      },
-      {
-        id: '3',
-        producaoId,
-        tipo: 'estado_alterado' as const,
-        descricao: 'Estado alterado de "Aguarda Componentes" para "FALTA COMPONENTES"',
-        usuario: 'Pedro Costa',
-        timestamp: '2025-01-29T09:20:00Z'
+        detalhes: { files: ['Especificacoes.pdf', 'Lista_Componentes.xlsx'] }
       }
     ];
   };
@@ -176,14 +148,13 @@ const PrepararComponentes: React.FC = () => {
     }, 0);
   };
 
-  const estatisticas = useMemo(() => {
-    const total = producoesPendentes.length;
-    const aguardaComponentes = producoesPendentes.filter(p => p.estado === 'Aguarda Componentes').length;
-    const faltaComponentes = producoesPendentes.filter(p => p.estado === 'FALTA COMPONENTES').length;
-    const desenvolvimento = producoesPendentes.filter(p => p.etapa === 'Desenvolvimento').length;
-    
-    return { total, aguardaComponentes, faltaComponentes, desenvolvimento };
-  }, [producoesPendentes]);
+  const isUrgent = (dataEntrega: string): boolean => {
+    const hoje = new Date();
+    const entrega = new Date(dataEntrega);
+    const diffTime = entrega.getTime() - hoje.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 3 && diffDays >= 0;
+  };
 
   if (loading) {
     return (
@@ -214,21 +185,21 @@ const PrepararComponentes: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center space-x-3 mb-4">
+        <div className="flex items-center space-x-3 mb-6">
           <Package2 className="w-8 h-8 text-orange-600" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">A Preparar Componentes</h1>
-            <p className="text-gray-600">Gestão de componentes e BOM para produções pendentes</p>
+            <h1 className="text-3xl font-bold text-gray-900">Preparar Componentes</h1>
+            <p className="text-gray-600">Gestão de componentes e comentários para produções</p>
           </div>
         </div>
 
-        {/* Estatísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Indicadores Principais */}
+        <div className="grid grid-cols-3 gap-4">
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <div className="flex items-center space-x-3">
               <Package2 className="w-6 h-6 text-orange-600" />
               <div>
-                <div className="text-2xl font-bold text-orange-700">{estatisticas.total}</div>
+                <div className="text-2xl font-bold text-orange-700">{estatisticas.totalPendentes}</div>
                 <div className="text-sm text-orange-600">Total Pendentes</div>
               </div>
             </div>
@@ -236,7 +207,7 @@ const PrepararComponentes: React.FC = () => {
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center space-x-3">
-              <Package2 className="w-6 h-6 text-yellow-600" />
+              <Clock className="w-6 h-6 text-yellow-600" />
               <div>
                 <div className="text-2xl font-bold text-yellow-700">{estatisticas.aguardaComponentes}</div>
                 <div className="text-sm text-yellow-600">Aguarda Componentes</div>
@@ -244,33 +215,23 @@ const PrepararComponentes: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center space-x-3">
-              <Package2 className="w-6 h-6 text-red-600" />
+              <CheckCircle className="w-6 h-6 text-green-600" />
               <div>
-                <div className="text-2xl font-bold text-red-700">{estatisticas.faltaComponentes}</div>
-                <div className="text-sm text-red-600">Falta Componentes</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
-              <Package2 className="w-6 h-6 text-blue-600" />
-              <div>
-                <div className="text-2xl font-bold text-blue-700">{estatisticas.desenvolvimento}</div>
-                <div className="text-sm text-blue-600">Desenvolvimento</div>
+                <div className="text-2xl font-bold text-green-700">{estatisticas.completos}</div>
+                <div className="text-sm text-green-600">Completos</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabela de Produções Pendentes */}
+      {/* Lista de Produções Pendentes */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Produções Pendentes de Componentes</h2>
-          <p className="text-gray-600">Gerir BOM e comentários para produções que aguardam componentes</p>
+          <h2 className="text-xl font-semibold text-gray-900">Produções Pendentes</h2>
+          <p className="text-gray-600">Componentes que necessitam de atenção</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -289,12 +250,6 @@ const PrepararComponentes: React.FC = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Quantidade
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  BOM
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Comentários
-                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Entrega
                 </th>
@@ -305,13 +260,13 @@ const PrepararComponentes: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {producoesPendentes.map((producao) => (
-                <tr key={producao.id} className="hover:bg-gray-50">
+                <tr key={producao.id} className={`hover:bg-gray-50 ${
+                  producao.estado === 'FALTA COMPONENTES' ? 'bg-red-50' : ''
+                }`}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{producao.referenciaInterna}</div>
-                        <div className="text-sm text-gray-500">{producao.referenciaCliente}</div>
-                      </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{producao.referenciaInterna}</div>
+                      <div className="text-sm text-gray-500">{producao.referenciaCliente}</div>
                     </div>
                   </td>
                   
@@ -335,33 +290,9 @@ const PrepararComponentes: React.FC = () => {
                     <div className="text-xs text-gray-500">unidades</div>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center space-x-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        (producao.bomFiles || []).length > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        <FileText className="w-3 h-3 mr-1" />
-                        {(producao.bomFiles || []).length}
-                      </span>
-                    </div>
-                  </td>
-                  
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      producao.comments 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      {producao.comments ? 'Sim' : 'Não'}
-                    </span>
-                  </td>
-                  
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`text-sm font-medium ${
-                      new Date(producao.dataEstimadaEntrega) <= new Date() ? 'text-red-600' : 'text-gray-900'
+                      isUrgent(producao.dataEstimadaEntrega) ? 'text-red-600' : 'text-gray-900'
                     }`}>
                       {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
                     </div>
@@ -370,62 +301,35 @@ const PrepararComponentes: React.FC = () => {
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center space-x-1">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center justify-center space-x-2">
                       {/* Marcar como Completo */}
-                      {(producao.estado === 'FALTA COMPONENTES' || producao.estado === 'Aguarda Componentes') && (
-                        <button
-                          onClick={() => handleMarcarCompleto(producao)}
-                          className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                          title="Marcar componentes como completos"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                      )}
-                      
-                      {/* Upload BOM */}
                       <button
-                        onClick={() => setBomModal({ isOpen: true, producao })}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Upload BOM"
+                        onClick={() => handleMarcarCompleto(producao)}
+                        className="flex items-center space-x-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                        title="Marcar componentes como completos"
                       >
-                        <Upload className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Marcar Completo</span>
                       </button>
                       
-                      {/* Editar Comentários */}
+                      {/* Comentários */}
                       <button
                         onClick={() => setCommentsModal({ isOpen: true, producao })}
-                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                        title="Editar comentários"
+                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                          producao.comments 
+                            ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                        title="Gerir comentários e ficheiros"
                       >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      
-                      {/* Editar Registo Completo */}
-                      <button
-                        onClick={() => setEditModal({ isOpen: true, producao })}
-                        className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                        title="Editar registo completo"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      
-                      {/* Ver Registo Completo */}
-                      <button
-                        onClick={() => setDetailsModal({ isOpen: true, producao })}
-                        className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                        title="Ver registo completo"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      
-                      {/* Ver Histórico */}
-                      <button
-                        onClick={() => setHistoricoModal({ isOpen: true, producao })}
-                        className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                        title="Ver histórico de componentes"
-                      >
-                        <Clock className="w-4 h-4" />
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Comentários</span>
+                        {producao.comments && (
+                          <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            ●
+                          </span>
+                        )}
                       </button>
                     </div>
                   </td>
@@ -444,50 +348,101 @@ const PrepararComponentes: React.FC = () => {
         )}
       </div>
 
-      {/* Legenda de Ações */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Legenda de Ações</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <span>Marcar Completo</span>
+      {/* Lista de Produções Completas */}
+      {producoesCompletas.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Componentes Completos</h2>
+            <p className="text-gray-600">Produções com componentes já preparados</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Upload className="w-4 h-4 text-blue-600" />
-            <span>Upload BOM</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Edit3 className="w-4 h-4 text-green-600" />
-            <span>Editar Comentários</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Edit className="w-4 h-4 text-purple-600" />
-            <span>Editar Registo</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Eye className="w-4 h-4 text-gray-600" />
-            <span>Ver Detalhes</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-indigo-600" />
-            <span>Ver Histórico</span>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Referência
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Marca / Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado Atual
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quantidade
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {producoesCompletas.map((producao) => (
+                  <tr key={producao.id} className="hover:bg-gray-50 opacity-50 bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-500">{producao.referenciaInterna}</div>
+                          <div className="text-sm text-gray-400">{producao.referenciaCliente}</div>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-500">{producao.marca}</div>
+                      <div className="text-sm text-gray-400">{producao.cliente}</div>
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {producao.estado}
+                      </span>
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="text-sm font-medium text-gray-500">{getQuantidadeTotal(producao)}</div>
+                      <div className="text-xs text-gray-400">unidades</div>
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button
+                          onClick={() => setDetailsModal({ isOpen: true, producao })}
+                          className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Ver registo completo"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        
+                        <button
+                          onClick={() => setHistoricoModal({ isOpen: true, producao })}
+                          className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Ver histórico"
+                        >
+                          <Clock className="w-4 h-4" />
+                        </button>
+                        
+                        <button
+                          onClick={() => setCommentsModal({ isOpen: true, producao })}
+                          className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Ver comentários"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
-      {/* Modal de Upload BOM */}
-      <BOMUploadModal
-        isOpen={bomModal.isOpen}
-        onClose={() => setBomModal({ isOpen: false, producao: null })}
-        onUpload={(files) => {
-          if (bomModal.producao) {
-            handleUploadBOM(bomModal.producao.id, files);
-          }
-        }}
-        producao={bomModal.producao}
-      />
+      )}
 
       {/* Modal de Comentários */}
-      <CommentsModal
+      <ComponenteCommentsModal
         isOpen={commentsModal.isOpen}
         onClose={() => setCommentsModal({ isOpen: false, producao: null })}
         onSave={(comments) => {
@@ -505,17 +460,9 @@ const PrepararComponentes: React.FC = () => {
         producao={detailsModal.producao}
         onUpdateFlags={(flags) => {
           if (detailsModal.producao) {
-            handleUpdateFlags(detailsModal.producao.id, flags);
+            updateFlags(detailsModal.producao.id, flags);
           }
         }}
-      />
-
-      {/* Modal de Edição */}
-      <ProducaoForm
-        isOpen={editModal.isOpen}
-        onClose={() => setEditModal({ isOpen: false, producao: null })}
-        onSave={handleUpdateProducao}
-        producao={editModal.producao || undefined}
       />
 
       {/* Modal de Histórico */}
