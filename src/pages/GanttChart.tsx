@@ -185,8 +185,8 @@ const GanttChart: React.FC = () => {
           <div className="flex items-center space-x-3">
             <Calendar className="w-8 h-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gráfico de Gantt</h1>
-              <p className="text-gray-600">Timeline visual das produções</p>
+              <h1 className="text-3xl font-bold text-gray-900">Planeamento</h1>
+              <p className="text-gray-600">Timeline visual e planeamento das produções</p>
             </div>
           </div>
           
@@ -321,7 +321,9 @@ const GanttChart: React.FC = () => {
                       ) : (
                         <MapPin className="w-3 h-3 text-orange-600" />
                       )}
-                      <span className="text-gray-700">{producao.localProducao}</span>
+                      <span className="text-gray-700">
+                        {producao.localProducao === 'Interno' ? 'Interno' : (producao.empresaExterna || 'Externo')}
+                      </span>
                     </div>
                   </div>
                 </div>

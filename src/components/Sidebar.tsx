@@ -25,9 +25,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
     },
     { 
       id: 'gantt' as PageType, 
-      label: 'Gráfico de Gantt', 
+      label: 'Planeamento', 
       icon: Calendar,
-      description: 'Timeline das produções'
+      description: 'Planeamento e timeline'
     },
     { 
       id: 'registos' as PageType, 

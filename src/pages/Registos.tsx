@@ -333,7 +333,9 @@ const Registos: React.FC = () => {
                     <div className="text-sm text-gray-900 max-w-xs truncate" title={producao.descricao}>
                       {producao.descricao}
                     </div>
-                    <div className="text-sm text-gray-500">{producao.tipoPeca} • {producao.genero}</div>
+                    <div className="text-sm text-gray-500">
+                      {producao.tipoPeca} • {producao.genero} • {producao.localProducao === 'Interno' ? 'Interno' : (producao.empresaExterna || 'Externo')}
+                    </div>
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-center">

@@ -243,14 +243,9 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
                 )}
                 <span className="text-gray-500">Local:</span>
                 <span className="text-gray-900 font-medium">
-                  {producao.localProducao}
+                  {producao.localProducao === 'Interno' ? 'Interno' : (producao.empresaExterna || 'Externo')}
                 </span>
               </div>
-              {producao.empresaExterna && (
-                <div className="text-xs text-gray-500 truncate">
-                  {producao.empresaExterna}
-                </div>
-              )}
             </div>
 
             {/* Actions */}

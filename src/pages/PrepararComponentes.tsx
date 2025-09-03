@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { Producao, BOMFile } from '../types';
 import BOMUploadModal from '../components/BOMUploadModal';
 import CommentsModal from '../components/CommentsModal';
 import ProducaoDetailsModal from '../components/ProducaoDetailsModal';
 import ProducaoForm from '../components/ProducaoForm';
+import ComponenteHistoricoModal from '../components/ComponenteHistoricoModal';
 import { useProducoes } from '../hooks/useSupabaseData';
 import * as supabaseApi from '../services/supabaseApi';
 
@@ -38,6 +39,11 @@ const PrepararComponentes: React.FC = () => {
     producao: Producao | null;
   }>({ isOpen: false, producao: null });
 
+  const [historicoModal, setHistoricoModal] = useState<{
+    isOpen: boolean;
+    producao: Producao | null;
+  }>({ isOpen: false, producao: null });
+
   // Filtrar produções que precisam de componentes
   const producoesPendentes = useMemo(() => {
     return producoes.filter(producao => 
@@ -50,6 +56,8 @@ const PrepararComponentes: React.FC = () => {
   const handleUploadBOM = async (producaoId: string, files: BOMFile[]) => {
     try {
       await supabaseApi.createBOMFiles(producaoId, files);
+      // Add to history
+      addToHistory(producaoId, 'upload_bom', `Upload de ${files.length} ficheiro(s) BOM`, { files: files.map(f => f.name) });
       // Refresh data to get updated BOM files
       window.location.reload();
     } catch (err) {
@@ -61,6 +69,8 @@ const PrepararComponentes: React.FC = () => {
     if (confirm('Tem certeza que deseja remover este ficheiro BOM?')) {
       try {
         await supabaseApi.deleteBOMFile(bomId);
+        // Add to history
+        addToHistory(producaoId, 'remover_bom', 'Ficheiro BOM removido');
         // Refresh data to get updated BOM files
         window.location.reload();
       } catch (err) {
@@ -72,6 +82,8 @@ const PrepararComponentes: React.FC = () => {
   const handleUpdateComments = async (producaoId: string, comments: string) => {
     try {
       await updateComments(producaoId, comments);
+      // Add to history
+      addToHistory(producaoId, 'comentario', 'Comentários atualizados', { comments });
     } catch (err) {
       alert('Erro ao atualizar comentários');
     }
@@ -103,12 +115,61 @@ const PrepararComponentes: React.FC = () => {
           problemas: false
         };
         await updateProducao(producao.id, producaoAtualizada);
+        // Add to history
+        addToHistory(producao.id, 'marcar_completo', 'Componentes marcados como completos - Estado alterado para "Corte"');
         alert('Componentes marcados como completos! Estado alterado para "Corte".');
       } catch (err) {
         alert('Erro ao marcar componentes como completos');
       }
     }
   };
+
+  // Mock function to add to history - in real app this would save to database
+  const addToHistory = (producaoId: string, tipo: any, descricao: string, detalhes?: any) => {
+    const historicoItem = {
+      id: Date.now().toString(),
+      producaoId,
+      tipo,
+      descricao,
+      usuario: 'Utilizador Atual', // In real app, get from auth
+      timestamp: new Date().toISOString(),
+      detalhes
+    };
+    console.log('Histórico adicionado:', historicoItem);
+  };
+
+  // Mock function to get history - in real app this would fetch from database
+  const getHistoricoForProducao = (producaoId: string) => {
+    // Mock data for demonstration
+    return [
+      {
+        id: '1',
+        producaoId,
+        tipo: 'comentario' as const,
+        descricao: 'Comentários iniciais adicionados',
+        usuario: 'João Silva',
+        timestamp: '2025-01-28T10:30:00Z'
+      },
+      {
+        id: '2',
+        producaoId,
+        tipo: 'upload_bom' as const,
+        descricao: 'Upload de 2 ficheiro(s) BOM',
+        usuario: 'Maria Santos',
+        timestamp: '2025-01-28T14:15:00Z',
+        detalhes: { files: ['BOM_v1.pdf', 'Especificacoes.pdf'] }
+      },
+      {
+        id: '3',
+        producaoId,
+        tipo: 'estado_alterado' as const,
+        descricao: 'Estado alterado de "Aguarda Componentes" para "FALTA COMPONENTES"',
+        usuario: 'Pedro Costa',
+        timestamp: '2025-01-29T09:20:00Z'
+      }
+    ];
+  };
+
   const getQuantidadeTotal = (producao: Producao): number => {
     return producao.variantes.reduce((total, variante) => {
       return total + Object.values(variante.tamanhos).reduce((sum, qty) => sum + qty, 0);
@@ -357,6 +418,15 @@ const PrepararComponentes: React.FC = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      
+                      {/* Ver Histórico */}
+                      <button
+                        onClick={() => setHistoricoModal({ isOpen: true, producao })}
+                        className="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                        title="Ver histórico de componentes"
+                      >
+                        <Clock className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -397,6 +467,10 @@ const PrepararComponentes: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-gray-600" />
             <span>Ver Detalhes</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4 text-indigo-600" />
+            <span>Ver Histórico</span>
           </div>
         </div>
       </div>
@@ -442,6 +516,14 @@ const PrepararComponentes: React.FC = () => {
         onClose={() => setEditModal({ isOpen: false, producao: null })}
         onSave={handleUpdateProducao}
         producao={editModal.producao || undefined}
+      />
+
+      {/* Modal de Histórico */}
+      <ComponenteHistoricoModal
+        isOpen={historicoModal.isOpen}
+        onClose={() => setHistoricoModal({ isOpen: false, producao: null })}
+        producaoRef={historicoModal.producao?.referenciaInterna || ''}
+        historico={historicoModal.producao ? getHistoricoForProducao(historicoModal.producao.id) : []}
       />
     </div>
   );

@@ -27,6 +27,16 @@ export interface ProducaoComment {
   updatedAt: string;
 }
 
+export interface ComponenteHistorico {
+  id: string;
+  producaoId: string;
+  tipo: 'comentario' | 'upload_bom' | 'remover_bom' | 'marcar_completo' | 'estado_alterado';
+  descricao: string;
+  usuario: string;
+  timestamp: string;
+  detalhes?: any;
+}
+
 export interface BOMFile {
   id: string;
   name: string;

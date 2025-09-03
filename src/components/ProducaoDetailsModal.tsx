@@ -117,8 +117,7 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
                     <MapPin className="w-4 h-4 text-orange-600" />
                   )}
                   <span className="text-gray-900">
-                    {producao.localProducao}
-                    {producao.empresaExterna && ` - ${producao.empresaExterna}`}
+                    {producao.localProducao === 'Interno' ? 'Interno' : (producao.empresaExterna || 'Externo')}
                   </span>
                 </div>
               </div>

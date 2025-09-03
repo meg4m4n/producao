@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, FileText, Plus, Trash2 } from 'lucide-react';
+import { X, Upload, FileText, Plus, Trash2, Eye } from 'lucide-react';
 import { Producao, BOMFile } from '../types';
 
 interface BOMUploadModalProps {
@@ -17,12 +17,14 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   // Reset selected files when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedFiles([]);
       setIsDragging(false);
+      setPreviewFile(null);
     }
   }, [isOpen]);
   const handleFileSelect = (files: FileList | null) => {
@@ -53,6 +55,10 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const previewFileContent = (file: File) => {
+    setPreviewFile(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -159,13 +165,23 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
                         <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => previewFileContent(file)}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Pré-visualizar ficheiro"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -210,6 +226,35 @@ const BOMUploadModal: React.FC<BOMUploadModalProps> = ({
             </button>
           </div>
         </form>
+
+        {/* Preview Modal */}
+        {previewFile && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 z-60 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Pré-visualização: {previewFile.name}</h3>
+                <button
+                  onClick={() => setPreviewFile(null)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 h-96 flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">Pré-visualização de PDF</p>
+                  <p className="text-sm text-gray-500">
+                    {previewFile.name} ({formatFileSize(previewFile.size)})
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    A pré-visualização completa estará disponível após o upload
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

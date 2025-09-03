@@ -7,7 +7,7 @@ import { useClientes } from '../hooks/useSupabaseData';
 interface ProducaoFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (producao: Omit<Producao, 'id'>) => void;
+  onSave: (producao: Omit<Producao, 'id'> | Producao) => void;
   producao?: Producao;
 }
 
@@ -146,11 +146,17 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const variantes = tabelaToVariantes(tabelaItems);
-    const producaoData = { 
+    const producaoData: any = { 
       ...formData, 
       variantes,
       estado: formData.faltaComponentes ? 'FALTA COMPONENTES' : formData.estado
     };
+    
+    // Include ID if editing existing production
+    if (producao?.id) {
+      producaoData.id = producao.id;
+    }
+    
     delete (producaoData as any).faltaComponentes;
     onSave(producaoData);
     onClose();
