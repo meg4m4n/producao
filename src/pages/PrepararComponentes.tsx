@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit } from 'lucide-react';
+import { Package2, Upload, MessageSquare, FileText, Download, Trash2, Edit3, Eye, Edit, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Producao, BOMFile } from '../types';
 import BOMUploadModal from '../components/BOMUploadModal';
 import CommentsModal from '../components/CommentsModal';
@@ -94,6 +94,21 @@ const PrepararComponentes: React.FC = () => {
     setEditModal({ isOpen: false, producao: null });
   };
 
+  const handleMarcarCompleto = async (producao: Producao) => {
+    if (confirm(`Marcar componentes como completos para "${producao.referenciaInterna}"?`)) {
+      try {
+        const producaoAtualizada = {
+          ...producao,
+          estado: 'Corte' as const,
+          problemas: false
+        };
+        await updateProducao(producao.id, producaoAtualizada);
+        alert('Componentes marcados como completos! Estado alterado para "Corte".');
+      } catch (err) {
+        alert('Erro ao marcar componentes como completos');
+      }
+    }
+  };
   const getQuantidadeTotal = (producao: Producao): number => {
     return producao.variantes.reduce((total, variante) => {
       return total + Object.values(variante.tamanhos).reduce((sum, qty) => sum + qty, 0);
@@ -295,7 +310,19 @@ const PrepararComponentes: React.FC = () => {
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1">
+                      {/* Marcar como Completo */}
+                      {(producao.estado === 'FALTA COMPONENTES' || producao.estado === 'Aguarda Componentes') && (
+                        <button
+                          onClick={() => handleMarcarCompleto(producao)}
+                          className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                          title="Marcar componentes como completos"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      
+                      {/* Upload BOM */}
                       <button
                         onClick={() => setBomModal({ isOpen: true, producao })}
                         className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -303,6 +330,8 @@ const PrepararComponentes: React.FC = () => {
                       >
                         <Upload className="w-4 h-4" />
                       </button>
+                      
+                      {/* Editar Comentários */}
                       <button
                         onClick={() => setCommentsModal({ isOpen: true, producao })}
                         className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
@@ -310,6 +339,8 @@ const PrepararComponentes: React.FC = () => {
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
+                      
+                      {/* Editar Registo Completo */}
                       <button
                         onClick={() => setEditModal({ isOpen: true, producao })}
                         className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
@@ -317,6 +348,8 @@ const PrepararComponentes: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
+                      
+                      {/* Ver Registo Completo */}
                       <button
                         onClick={() => setDetailsModal({ isOpen: true, producao })}
                         className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
@@ -341,6 +374,32 @@ const PrepararComponentes: React.FC = () => {
         )}
       </div>
 
+      {/* Legenda de Ações */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Legenda de Ações</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span>Marcar Completo</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Upload className="w-4 h-4 text-blue-600" />
+            <span>Upload BOM</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Edit3 className="w-4 h-4 text-green-600" />
+            <span>Editar Comentários</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Edit className="w-4 h-4 text-purple-600" />
+            <span>Editar Registo</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Eye className="w-4 h-4 text-gray-600" />
+            <span>Ver Detalhes</span>
+          </div>
+        </div>
+      </div>
       {/* Modal de Upload BOM */}
       <BOMUploadModal
         isOpen={bomModal.isOpen}

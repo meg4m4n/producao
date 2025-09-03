@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import React, { useState, useEffect } from 'react';
 import { X, Save, Users, Plus, Trash2 } from 'lucide-react';
 import { Cliente } from '../types';

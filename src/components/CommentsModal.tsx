@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import React, { useState, useEffect } from 'react';
 import { X, Save, MessageSquare } from 'lucide-react';
 import { Producao } from '../types';
