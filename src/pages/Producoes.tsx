@@ -79,14 +79,20 @@ const Producoes: React.FC = () => {
     const emProducao = producoes.filter(p => p.emProducao || false).length;
     const comProblemas = producoes.filter(p => p.problemas || false).length;
     const faltaComponentes = producoes.filter(p => p.estado === 'FALTA COMPONENTES').length;
-    const faltaComentarios = producoes.filter(p => p.estado === 'Aguarda Comentários' || !p.comments || p.comments.trim() === '').length;
+    const atrasado = producoes.filter(p => {
+      const hoje = new Date();
+      const entrega = new Date(p.dataEstimadaEntrega);
+      const diffTime = entrega.getTime() - hoje.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 2; // Overdue or within 2 days
+    }).length;
     
     const porEtapa = etapas.reduce((acc, etapa) => {
       acc[etapa] = producoes.filter(p => p.etapa === etapa).length;
       return acc;
     }, {} as Record<Etapa, number>);
     
-    return { total, emProducao, comProblemas, faltaComponentes, faltaComentarios, porEtapa };
+    return { total, emProducao, comProblemas, faltaComponentes, atrasado, porEtapa };
   }, [producoes]);
 
   const producoesOrdenadas = useMemo(() => {
@@ -186,10 +192,10 @@ const Producoes: React.FC = () => {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
-              <MessageSquare className="w-5 h-5 text-blue-600" />
+              <Clock className="w-5 h-5 text-blue-600" />
               <div>
-                <div className="text-lg font-bold text-blue-700">{estatisticas.faltaComentarios}</div>
-                <div className="text-sm text-blue-600">Falta Comentários</div>
+                <div className="text-lg font-bold text-blue-700">{estatisticas.atrasado}</div>
+                <div className="text-sm text-blue-600">Atrasado</div>
               </div>
             </div>
           </div>

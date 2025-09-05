@@ -1,5 +1,5 @@
 import React from 'react';
-import { Factory, FileText, Menu, X, Package2, Calendar, Archive, Grid3X3, Shield } from 'lucide-react';
+import { Factory, FileText, Menu, X, Package2, Calendar, Archive, Grid3X3, Shield, DollarSign } from 'lucide-react';
 import { PageType } from '../types';
 
 interface SidebarProps {
@@ -52,6 +52,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
       label: 'Controlo de Qualidade', 
       icon: Shield,
       description: 'Gestão de qualidade'
+    },
+    { 
+      id: 'financeiro' as PageType, 
+      label: 'Financeiro', 
+      icon: DollarSign,
+      description: 'Gestão financeira'
     },
   ];
 

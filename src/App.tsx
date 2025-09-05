@@ -7,6 +7,7 @@ import GanttChart from './pages/GanttChart';
 import Historico from './pages/Historico';
 import AppsLomartex from './pages/AppsLomartex';
 import ControloQualidade from './pages/ControloQualidade';
+import Financeiro from './pages/Financeiro';
 import { PageType } from './types';
 
 function App() {
@@ -28,6 +29,8 @@ function App() {
         return <AppsLomartex />;
       case 'controlo-qualidade':
         return <ControloQualidade />;
+      case 'financeiro':
+        return <Financeiro />;
       default:
         return <Producoes />;
     }

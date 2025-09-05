@@ -38,6 +38,11 @@ const transformProducaoFromDB = (row: any, variantes: any[], bomFiles: any[] = [
     empresaExterna: row.empresa_externa,
     linkOdoo: row.link_odoo,
     comments: row.comments,
+    pago: row.pago,
+    fastprod: row.fastprod,
+    numeroFatura: row.numero_fatura,
+    dataFatura: row.data_fatura,
+    valorFatura: row.valor_fatura,
     bomFiles: bomFiles.map(bf => ({
       id: bf.id,
       name: bf.nome,
@@ -376,12 +381,12 @@ export const deleteProducao = async (id: string): Promise<void> => {
     throw error;
   }
 };
-
-export const updateProducaoFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }): Promise<void> => {
+export const updateProducaoFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean; pago?: boolean }): Promise<void> => {
   try {
     const updateData: any = {};
     if (flags.problemas !== undefined) updateData.problemas = flags.problemas;
     if (flags.emProducao !== undefined) updateData.em_producao = flags.emProducao;
+    if (flags.pago !== undefined) updateData.pago = flags.pago;
     if (flags.faltaComponentes !== undefined) {
       updateData.estado = flags.faltaComponentes ? 'FALTA COMPONENTES' : 'Aguarda Componentes';
     }
