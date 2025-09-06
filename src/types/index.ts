@@ -21,6 +21,13 @@ export interface BOMFile {
   uploadDate: string;
 }
 
+export interface PagamentoParcial {
+  id: string;
+  valor: number;
+  data: string;
+  observacoes?: string;
+}
+
 export interface ProducaoComment {
   id: string;
   text: string;
@@ -78,7 +85,12 @@ export interface Producao {
   comments?: string;
   problemas?: boolean;
   pago?: boolean;
+  pagoParcial?: boolean;
+  pagamentos?: PagamentoParcial[];
+  valorPago?: number;
+  valorRestante?: number;
   fastprod?: boolean;
+  observacoesFinanceiras?: string;
   numeroFatura?: string;
   dataFatura?: string;
   valorFatura?: number;

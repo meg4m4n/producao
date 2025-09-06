@@ -40,6 +40,11 @@ const transformProducaoFromDB = (row: any, variantes: any[], bomFiles: any[] = [
     comments: row.comments,
     pago: row.pago,
     fastprod: row.fastprod,
+    pagoParcial: row.pago_parcial,
+    pagamentos: row.pagamentos || [],
+    valorPago: row.valor_pago,
+    valorRestante: row.valor_restante,
+    observacoesFinanceiras: row.observacoes_financeiras,
     numeroFatura: row.numero_fatura,
     dataFatura: row.data_fatura,
     valorFatura: row.valor_fatura,
@@ -245,7 +250,17 @@ export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Pr
         local_producao: producao.localProducao,
         empresa_externa: producao.empresaExterna,
         link_odoo: producao.linkOdoo,
-        comments: producao.comments
+        comments: producao.comments,
+        pago: producao.pago,
+        pago_parcial: producao.pagoParcial,
+        pagamentos: producao.pagamentos,
+        valor_pago: producao.valorPago,
+        valor_restante: producao.valorRestante,
+        fastprod: producao.fastprod,
+        observacoes_financeiras: producao.observacoesFinanceiras,
+        numero_fatura: producao.numeroFatura,
+        data_fatura: producao.dataFatura,
+        valor_fatura: producao.valorFatura
       })
       .select()
       .single();
@@ -321,7 +336,17 @@ export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>)
         local_producao: producao.localProducao,
         empresa_externa: producao.empresaExterna,
         link_odoo: producao.linkOdoo,
-        comments: producao.comments
+        comments: producao.comments,
+        pago: producao.pago,
+        pago_parcial: producao.pagoParcial,
+        pagamentos: producao.pagamentos,
+        valor_pago: producao.valorPago,
+        valor_restante: producao.valorRestante,
+        fastprod: producao.fastprod,
+        observacoes_financeiras: producao.observacoesFinanceiras,
+        numero_fatura: producao.numeroFatura,
+        data_fatura: producao.dataFatura,
+        valor_fatura: producao.valorFatura
       })
       .eq('id', id);
 

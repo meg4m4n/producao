@@ -64,6 +64,11 @@ const Users: React.FC = () => {
   }, []);
 
   const handleCreateUser = (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!userData.password) {
+      alert('Palavra-passe é obrigatória para novos utilizadores');
+      return;
+    }
+    
     const newUser: User = {
       ...userData,
       id: Date.now().toString(),
@@ -79,6 +84,8 @@ const Users: React.FC = () => {
     
     const updatedUser: User = {
       ...userData,
+      // Keep existing password if no new password provided
+      password: userData.password || userForm.user.password,
       id: userForm.user.id,
       created_at: userForm.user.created_at,
       updated_at: new Date().toISOString()

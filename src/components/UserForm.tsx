@@ -21,6 +21,7 @@ const UserForm: React.FC<UserFormProps> = ({
   const [formData, setFormData] = useState({
     email: '',
     name: '',
+    password: '',
     role: 'user' as 'admin' | 'user',
     permissions: [] as PagePermission[]
   });
@@ -30,6 +31,7 @@ const UserForm: React.FC<UserFormProps> = ({
       setFormData({
         email: user.email,
         name: user.name,
+        password: '', // Don't show existing password
         role: user.role,
         permissions: user.permissions
       });
@@ -37,6 +39,7 @@ const UserForm: React.FC<UserFormProps> = ({
       setFormData({
         email: '',
         name: '',
+        password: '',
         role: 'user',
         permissions: []
       });
@@ -58,6 +61,7 @@ const UserForm: React.FC<UserFormProps> = ({
     onSave({
       email: formData.email,
       name: formData.name,
+      password: formData.password,
       role: formData.role,
       permissions: finalPermissions
     });
@@ -156,6 +160,20 @@ const UserForm: React.FC<UserFormProps> = ({
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {user ? 'Nova Palavra-passe (deixe em branco para manter)' : 'Palavra-passe'}
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required={!user}
+                placeholder={user ? 'Deixe em branco para manter a atual' : 'Introduza a palavra-passe'}
               />
             </div>
           </div>

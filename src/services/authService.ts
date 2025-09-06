@@ -66,11 +66,16 @@ export const getUsers = async (): Promise<User[]> => {
 
 export const createUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User> => {
   try {
+    if (!userData.password) {
+      throw new Error('Palavra-passe é obrigatória');
+    }
+    
     const { data, error } = await supabase
       .from('users')
       .insert({
         email: userData.email,
         name: userData.name,
+        password: userData.password, // In production, this should be hashed
         role: userData.role,
         permissions: userData.permissions
       })
@@ -83,6 +88,7 @@ export const createUser = async (userData: Omit<User, 'id' | 'created_at' | 'upd
       id: data.id,
       email: data.email,
       name: data.name,
+      password: data.password,
       role: data.role,
       permissions: data.permissions as PagePermission[],
       created_at: data.created_at,
@@ -97,14 +103,21 @@ export const createUser = async (userData: Omit<User, 'id' | 'created_at' | 'upd
 
 export const updateUser = async (id: string, userData: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User> => {
   try {
+    const updateData: any = {
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      permissions: userData.permissions
+    };
+    
+    // Only update password if provided
+    if (userData.password) {
+      updateData.password = userData.password; // In production, this should be hashed
+    }
+    
     const { data, error } = await supabase
       .from('users')
-      .update({
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        permissions: userData.permissions
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -115,6 +128,7 @@ export const updateUser = async (id: string, userData: Omit<User, 'id' | 'create
       id: data.id,
       email: data.email,
       name: data.name,
+      password: data.password,
       role: data.role,
       permissions: data.permissions as PagePermission[],
       created_at: data.created_at,

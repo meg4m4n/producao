@@ -35,6 +35,7 @@ export interface Database {
           id: string
           email: string
           name: string
+          password: string
           role: 'admin' | 'user'
           permissions: Json
           last_login: string | null
@@ -45,6 +46,7 @@ export interface Database {
           id?: string
           email: string
           name: string
+          password: string
           role?: 'admin' | 'user'
           permissions?: Json
           last_login?: string | null
@@ -55,6 +57,7 @@ export interface Database {
           id?: string
           email?: string
           name?: string
+          password?: string
           role?: 'admin' | 'user'
           permissions?: Json
           last_login?: string | null
@@ -116,6 +119,16 @@ export interface Database {
           empresa_externa: string | null
           link_odoo: string | null
           comments: string | null
+          pago: boolean
+          fastprod: boolean
+          pago_parcial: boolean
+          pagamentos: Json
+          valor_pago: number
+          valor_restante: number
+          observacoes_financeiras: string | null
+          numero_fatura: string | null
+          data_fatura: string | null
+          valor_fatura: number | null
           created_at: string
           updated_at: string
         }
@@ -139,6 +152,16 @@ export interface Database {
           empresa_externa?: string | null
           link_odoo?: string | null
           comments?: string | null
+          pago?: boolean
+          fastprod?: boolean
+          pago_parcial?: boolean
+          pagamentos?: Json
+          valor_pago?: number
+          valor_restante?: number
+          observacoes_financeiras?: string | null
+          numero_fatura?: string | null
+          data_fatura?: string | null
+          valor_fatura?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -162,6 +185,16 @@ export interface Database {
           empresa_externa?: string | null
           link_odoo?: string | null
           comments?: string | null
+          pago?: boolean
+          fastprod?: boolean
+          pago_parcial?: boolean
+          pagamentos?: Json
+          valor_pago?: number
+          valor_restante?: number
+          observacoes_financeiras?: string | null
+          numero_fatura?: string | null
+          data_fatura?: string | null
+          valor_fatura?: number | null
           created_at?: string
           updated_at?: string
         }

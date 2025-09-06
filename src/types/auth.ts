@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  password?: string;
   role: 'admin' | 'user';
   permissions: PagePermission[];
   created_at: string;
