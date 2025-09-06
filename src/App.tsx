@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoginForm from './components/LoginForm';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Producoes from './pages/Producoes';
 import Registos from './pages/Registos';
@@ -8,31 +11,90 @@ import Historico from './pages/Historico';
 import AppsLomartex from './pages/AppsLomartex';
 import ControloQualidade from './pages/ControloQualidade';
 import Financeiro from './pages/Financeiro';
+import Users from './pages/Users';
 import { PageType } from './types';
 
-function App() {
+const AppContent: React.FC = () => {
+  const { isAuthenticated, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('producoes');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginForm />;
+  }
 
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'producoes':
-        return <Producoes />;
+        return (
+          <ProtectedRoute page="producoes">
+            <Producoes />
+          </ProtectedRoute>
+        );
       case 'preparar-componentes':
-        return <PrepararComponentes />;
+        return (
+          <ProtectedRoute page="preparar-componentes">
+            <PrepararComponentes />
+          </ProtectedRoute>
+        );
       case 'gantt':
-        return <GanttChart />;
+        return (
+          <ProtectedRoute page="gantt">
+            <GanttChart />
+          </ProtectedRoute>
+        );
       case 'registos':
-        return <Registos />;
+        return (
+          <ProtectedRoute page="registos">
+            <Registos />
+          </ProtectedRoute>
+        );
       case 'historico':
-        return <Historico />;
+        return (
+          <ProtectedRoute page="historico">
+            <Historico />
+          </ProtectedRoute>
+        );
       case 'apps-lomartex':
-        return <AppsLomartex />;
+        return (
+          <ProtectedRoute page="apps-lomartex">
+            <AppsLomartex />
+          </ProtectedRoute>
+        );
       case 'controlo-qualidade':
-        return <ControloQualidade />;
+        return (
+          <ProtectedRoute page="controlo-qualidade">
+            <ControloQualidade />
+          </ProtectedRoute>
+        );
       case 'financeiro':
-        return <Financeiro />;
+        return (
+          <ProtectedRoute page="financeiro">
+            <Financeiro />
+          </ProtectedRoute>
+        );
+      case 'users':
+        return (
+          <ProtectedRoute page="users">
+            <Users />
+          </ProtectedRoute>
+        );
       default:
-        return <Producoes />;
+        return (
+          <ProtectedRoute page="producoes">
+            <Producoes />
+          </ProtectedRoute>
+        );
     }
   };
 
@@ -40,6 +102,14 @@ function App() {
     <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
       {renderCurrentPage()}
     </Layout>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

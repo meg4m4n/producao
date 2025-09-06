@@ -30,6 +30,39 @@ export interface Database {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          id: string
+          email: string
+          name: string
+          role: 'admin' | 'user'
+          permissions: Json
+          last_login: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          name: string
+          role?: 'admin' | 'user'
+          permissions?: Json
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string
+          role?: 'admin' | 'user'
+          permissions?: Json
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marcas: {
         Row: {
           id: string
@@ -234,6 +267,7 @@ export interface Database {
       etapa_type: 'Desenvolvimento' | '1º proto' | '2º proto' | 'Size-Set' | 'PPS' | 'Produção' | 'Pronto' | 'Enviado'
       estado_type: 'Modelagem' | 'Aguarda Componentes' | 'FALTA COMPONENTES' | 'Aguarda Malha' | 'Com Defeito' | 'Aguarda Comentários' | 'Corte' | 'Confecção' | 'Transfers' | 'Serviços Externos' | 'Embalamento'
       local_producao_type: 'Interno' | 'Externo'
+      user_role: 'admin' | 'user'
     }
     CompositeTypes: {
       [_ in never]: never

@@ -12,7 +12,7 @@ export type Estado =
   | 'Embalamento';
 
 export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade';
-export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade' | 'financeiro';
+export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade' | 'financeiro' | 'users';
 
 export interface BOMFile {
   id: string;

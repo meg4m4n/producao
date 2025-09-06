@@ -1,6 +1,8 @@
 import React from 'react';
 import { Factory, FileText, Menu, X, Package2, Calendar, Archive, Grid3X3, Shield, DollarSign } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { PageType } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +12,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPageChange }) => {
+  const { hasPageAccess } = useAuth();
+
   const menuItems = [
     { 
       id: 'producoes' as PageType, 
@@ -59,7 +63,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
       icon: DollarSign,
       description: 'Gestão financeira'
     },
+    { 
+      id: 'users' as PageType, 
+      label: 'Utilizadores', 
+      icon: Users,
+      description: 'Gestão de utilizadores'
+    },
   ];
+
+  // Filter menu items based on user permissions
+  const accessibleMenuItems = menuItems.filter(item => hasPageAccess(item.id));
 
   return (
     <>
@@ -93,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
 
         {/* Navigation */}
         <nav className="p-2 space-y-1">
-          {menuItems.map((item) => {
+          {accessibleMenuItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = currentPage === item.id;
             

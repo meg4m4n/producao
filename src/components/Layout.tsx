@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
+import Header from './Header';
 import { PageType } from '../types';
 
 interface LayoutProps {
@@ -27,6 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
         ${sidebarOpen ? 'ml-56' : 'ml-14'}
         pb-16
       `}>
+        <Header />
         <main className="p-6 max-w-full">
           {children}
         </main>
