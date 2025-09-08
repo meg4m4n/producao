@@ -14,7 +14,8 @@ const Producoes: React.FC = () => {
     createProducao, 
     updateProducao, 
     deleteProducao, 
-    updateFlags 
+    updateFlags,
+    updateFinancialFlags
   } = useProducoes();
   
   const [editModal, setEditModal] = useState<{

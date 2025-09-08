@@ -94,6 +94,7 @@ export interface Producao {
   numeroFatura?: string | null;
   dataFatura?: string | null;
   valorFatura?: number | null;
+  faturado?: boolean;
 }
 
 

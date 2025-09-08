@@ -406,12 +406,11 @@ export const deleteProducao = async (id: string): Promise<void> => {
     throw error;
   }
 };
-export const updateProducaoFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean; pago?: boolean }): Promise<void> => {
+export const updateProducaoFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }): Promise<void> => {
   try {
     const updateData: any = {};
     if (flags.problemas !== undefined) updateData.problemas = flags.problemas;
     if (flags.emProducao !== undefined) updateData.em_producao = flags.emProducao;
-    if (flags.pago !== undefined) updateData.pago = flags.pago;
     if (flags.faltaComponentes !== undefined) {
       updateData.estado = flags.faltaComponentes ? 'FALTA COMPONENTES' : 'Aguarda Componentes';
     }
@@ -438,6 +437,38 @@ export const updateProducaoComments = async (id: string, comments: string): Prom
     if (error) throw error;
   } catch (error) {
     console.error('Error updating producao comments:', error);
+    throw error;
+  }
+};
+
+export const updateProducaoFinancialFlags = async (id: string, flags: { faturado?: boolean; pago?: boolean }): Promise<void> => {
+  try {
+    const updateData: any = {};
+    
+    if (flags.pago !== undefined) {
+      updateData.pago = flags.pago;
+    }
+    
+    if (flags.faturado !== undefined) {
+      if (flags.faturado) {
+        // Set invoice data when marking as invoiced
+        updateData.numero_fatura = `FAT-${Date.now()}`;
+        updateData.data_fatura = new Date().toISOString().split('T')[0];
+      } else {
+        // Clear invoice data when unmarking as invoiced
+        updateData.numero_fatura = null;
+        updateData.data_fatura = null;
+      }
+    }
+
+    const { error } = await supabase
+      .from('producoes')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating producao financial flags:', error);
     throw error;
   }
 };

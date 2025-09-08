@@ -58,14 +58,13 @@ export const useProducoes = () => {
     }
   };
 
-  const updateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean; pago?: boolean }) => {
+  const updateFlags = async (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }) => {
     try {
       await supabaseApi.updateProducaoFlags(id, flags);
       setProducoes(prev => prev.map(p => p.id === id ? { 
         ...p, 
         problemas: flags.problemas !== undefined ? flags.problemas : p.problemas,
         emProducao: flags.emProducao !== undefined ? flags.emProducao : p.emProducao,
-        pago: flags.pago !== undefined ? flags.pago : p.pago,
         estado: flags.faltaComponentes !== undefined 
           ? (flags.faltaComponentes ? 'FALTA COMPONENTES' as const : 'Aguarda Componentes' as const)
           : p.estado
