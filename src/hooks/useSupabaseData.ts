@@ -76,6 +76,25 @@ export const useProducoes = () => {
     }
   };
 
+  const updateFinancialFlags = async (id: string, flags: { faturado?: boolean; pago?: boolean }) => {
+    try {
+      await supabaseApi.updateProducaoFinancialFlags(id, flags);
+      setProducoes(prev => prev.map(p => p.id === id ? { 
+        ...p, 
+        numeroFatura: flags.faturado !== undefined 
+          ? (flags.faturado ? (p.numeroFatura || `FAT-${Date.now()}`) : null)
+          : p.numeroFatura,
+        dataFatura: flags.faturado !== undefined 
+          ? (flags.faturado ? (p.dataFatura || new Date().toISOString().split('T')[0]) : null)
+          : p.dataFatura,
+        pago: flags.pago !== undefined ? flags.pago : p.pago
+      } : p));
+    } catch (err) {
+      setError('Erro ao atualizar flags financeiros');
+      throw err;
+    }
+  };
+
   const updateComments = async (id: string, comments: string) => {
     try {
       await supabaseApi.updateProducaoComments(id, comments);
@@ -95,6 +114,7 @@ export const useProducoes = () => {
     deleteProducao,
     updateFlags,
     updateComments,
+    updateFinancialFlags,
     refetch: fetchProducoes
   };
 };

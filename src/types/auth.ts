@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  password?: string;
+  password: string; // agora obrigatório
   role: 'admin' | 'user';
   permissions: PagePermission[];
   created_at: string;
@@ -25,4 +25,12 @@ export interface AuthState {
 export interface LoginCredentials {
   email: string;
   password: string;
+}
+
+// Novo para tabela profiles
+export interface Profile {
+  id: string;
+  role?: string;
+  password: string;
+  created_at?: string;
 }

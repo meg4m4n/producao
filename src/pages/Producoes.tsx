@@ -239,6 +239,7 @@ const Producoes: React.FC = () => {
       <ProducoesList 
         producoes={producoesOrdenadas} 
         onUpdateFlags={updateFlags}
+        onUpdateFinancialFlags={updateFinancialFlags}
         onEdit={(producao) => setEditModal({ isOpen: true, producao })}
         onDelete={handleDeleteProducao}
         showActions={true}

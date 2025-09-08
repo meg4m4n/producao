@@ -85,16 +85,17 @@ export interface Producao {
   comments?: string;
   problemas?: boolean;
   pago?: boolean;
-  pagoParcial?: boolean;
-  pagamentos?: PagamentoParcial[];
-  valorPago?: number;
-  valorRestante?: number;
+  pago_parcial?: boolean;              // atualizado para snake_case
+  pagamentos?: PagamentoParcial[];     // já ok
+  valor_pago?: number;                 // atualizado para snake_case
+  valor_restante?: number;             // atualizado para snake_case
   fastprod?: boolean;
-  observacoesFinanceiras?: string;
-  numeroFatura?: string;
-  dataFatura?: string;
-  valorFatura?: number;
+  observacoes_financeiras?: string;    // atualizado para snake_case
+  numeroFatura?: string | null;
+  dataFatura?: string | null;
+  valorFatura?: number | null;
 }
+
 
 export interface Cliente {
   id: string;
