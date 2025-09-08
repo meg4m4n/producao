@@ -22,5 +22,6 @@ export const estados: Estado[] = [
   'Confecção',
   'Transfers',
   'Serviços Externos',
-  'Embalamento'
+  'Embalamento',
+  'Pronto'
 ];

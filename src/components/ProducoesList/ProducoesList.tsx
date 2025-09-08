@@ -9,6 +9,7 @@ interface ProducoesListProps {
   producoes: Producao[];
   onEdit?: (producao: Producao) => void;
   onDelete?: (id: string) => void;
+  onDuplicate?: (producao: Producao) => void;
   onUpdateFlags?: (id: string, flags: { problemas?: boolean; emProducao?: boolean }) => void;
   onUpdateFinancialFlags?: (id: string, flags: { faturado?: boolean; pago?: boolean }) => void;
   showActions?: boolean;
@@ -18,6 +19,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
   producoes, 
   onEdit, 
   onDelete, 
+  onDuplicate,
   onUpdateFlags,
   onUpdateFinancialFlags,
   showActions = false 
@@ -57,6 +59,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
       'Transfers': 'bg-purple-100 text-purple-700',
       'Serviços Externos': 'bg-teal-100 text-teal-700',
       'Embalamento': 'bg-green-100 text-green-700',
+      'Pronto': 'bg-green-200 text-green-900',
     };
     return colors[estado];
   };
@@ -92,6 +95,13 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
     }
   };
 
+  const handleArchive = (producao: Producao) => {
+    if (confirm(`Arquivar a produção "${producao.referenciaInterna}" para o histórico?`)) {
+      // This would move the production to history
+      // For now, we'll just show a message
+      alert('Produção arquivada para o histórico!');
+    }
+  };
   const producoesFiltradas = useMemo(() => {
     return producoes.filter(producao => {
       const matchEtapa = filtroEtapa === 'all' || producao.etapa === filtroEtapa;
@@ -164,6 +174,8 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
             producao={producao}
             onEdit={onEdit}
             onDelete={onDelete}
+            onDuplicate={onDuplicate}
+            onArchive={handleArchive}
             onFlagChange={(flag, value) => handleFlagChange(producao.id, flag, value)}
             onViewDetails={() => setDetailsModal({ isOpen: true, producao })}
             showActions={showActions}

@@ -188,12 +188,12 @@ const GanttChart: React.FC = () => {
     }
   }, [zoomLevel]);
 
-  const handleDateEdit = async (producao: Producao, newDates: { dataInicio: string; dataEstimadaEntrega: string }) => {
+  const handleDateEdit = async (producao: Producao, newDates: { dataInicio: string; dataFinal: string }) => {
     try {
       const updatedProducao = {
         ...producao,
         dataInicio: newDates.dataInicio,
-        dataEstimadaEntrega: newDates.dataEstimadaEntrega
+        dataFinal: newDates.dataFinal
       };
       await updateProducao(producao.id, updatedProducao);
       setEditDateModal({ isOpen: false, producao: null });
@@ -392,7 +392,7 @@ const GanttChart: React.FC = () => {
                         {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}
                       </div>
                       <div className="text-red-600 font-medium">
-                        {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+                        {new Date(producao.dataFinal).toLocaleDateString('pt-PT')}
                       </div>
                     </div>
                   </div>
@@ -457,7 +457,7 @@ const GanttChart: React.FC = () => {
                       `}
                       style={{
                         left: getDatePosition(new Date(producao.dataInicio)),
-                        width: getBarWidth(new Date(producao.dataInicio), new Date(producao.dataEstimadaEntrega))
+                        width: getBarWidth(new Date(producao.dataInicio), new Date(producao.dataFinal))
                       }}
                       title={`${producao.referenciaInterna} - ${producao.etapa} - ${producao.estado}`}
                       onClick={() => setEditDateModal({ isOpen: true, producao })}

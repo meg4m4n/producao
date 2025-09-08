@@ -295,7 +295,7 @@ const Historico: React.FC = () => {
                   
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+                      {new Date(producao.dataFinal).toLocaleDateString('pt-PT')}
                     </div>
                     <div className="text-xs text-gray-500">
                       Início: {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}

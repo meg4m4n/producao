@@ -5,7 +5,7 @@ import { Producao } from '../types';
 interface EditDateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (producao: Producao, newDates: { dataInicio: string; dataEstimadaEntrega: string }) => void;
+  onSave: (producao: Producao, newDates: { dataInicio: string; dataFinal: string }) => void;
   producao: Producao | null;
 }
 
@@ -17,21 +17,21 @@ const EditDateModal: React.FC<EditDateModalProps> = ({
 }) => {
   const [dates, setDates] = useState({
     dataInicio: '',
-    dataEstimadaEntrega: ''
+    dataFinal: ''
   });
 
   useEffect(() => {
     if (isOpen && producao) {
       setDates({
         dataInicio: producao.dataInicio,
-        dataEstimadaEntrega: producao.dataEstimadaEntrega
+        dataFinal: producao.dataFinal
       });
     }
   }, [isOpen, producao]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (producao && dates.dataInicio && dates.dataEstimadaEntrega) {
+    if (producao && dates.dataInicio && dates.dataFinal) {
       onSave(producao, dates);
     }
   };
@@ -72,11 +72,11 @@ const EditDateModal: React.FC<EditDateModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Data Estimada de Entrega</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Data Final</label>
             <input
               type="date"
-              value={dates.dataEstimadaEntrega}
-              onChange={(e) => setDates(prev => ({ ...prev, dataEstimadaEntrega: e.target.value }))}
+              value={dates.dataFinal}
+              onChange={(e) => setDates(prev => ({ ...prev, dataFinal: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
@@ -87,7 +87,7 @@ const EditDateModal: React.FC<EditDateModalProps> = ({
             <h4 className="text-sm font-medium text-gray-700 mb-2">Valores Atuais</h4>
             <div className="text-sm text-gray-600 space-y-1">
               <p>Início: {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}</p>
-              <p>Entrega: {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}</p>
+              <p>Final: {new Date(producao.dataFinal).toLocaleDateString('pt-PT')}</p>
             </div>
           </div>
 

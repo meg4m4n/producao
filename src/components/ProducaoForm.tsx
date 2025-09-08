@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Package, Plus, Trash2, Copy } from 'lucide-react';
+import { X, Save, Package, Plus, Trash2, Copy, Clock, Wrench } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados } from '../data/mockData';
 import { useClientes } from '../hooks/useSupabaseData';
+import { useTiposPeca } from '../hooks/useTiposPeca';
+import { useLocaisProducao } from '../hooks/useLocaisProducao';
 
 interface ProducaoFormProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ interface TabelaItem {
 
 const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, producao }) => {
   const { clientes, loading: clientesLoading } = useClientes();
+  const { tiposPeca } = useTiposPeca();
+  const { locaisProducao } = useLocaisProducao();
   
   const variantesToTabela = (variantes: any[]): TabelaItem[] => {
     const items: TabelaItem[] = [];
@@ -52,6 +56,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
   };
 
   const [formData, setFormData] = useState({
+    codigoOP: '',
     marca: '',
     cliente: '',
     referenciaInterna: '',
@@ -63,11 +68,15 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     estado: 'Modelagem' as Estado,
     dataInicio: new Date().toISOString().split('T')[0],
     dataPrevisao: '',
-    dataEstimadaEntrega: '',
+    dataFinal: '',
+    tempoProducaoEstimado: 0,
+    tempoProducaoReal: 0,
+    temMolde: false,
     emProducao: false,
     problemas: false,
     faltaComponentes: false,
     localProducao: 'Interno' as const,
+    localProducaoId: '',
     empresaExterna: '',
     linkOdoo: '',
     comments: ''
@@ -81,6 +90,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
   useEffect(() => {
     if (producao && isOpen) {
       setFormData({
+        codigoOP: producao.codigoOP || '',
         marca: producao.marca || '',
         cliente: producao.cliente || '',
         referenciaInterna: producao.referenciaInterna || '',
@@ -92,11 +102,15 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
         estado: producao.estado || 'Modelagem',
         dataInicio: producao.dataInicio || new Date().toISOString().split('T')[0],
         dataPrevisao: producao.dataPrevisao || '',
-        dataEstimadaEntrega: producao.dataEstimadaEntrega || '',
+        dataFinal: producao.dataFinal || '',
+        tempoProducaoEstimado: producao.tempoProducaoEstimado || 0,
+        tempoProducaoReal: producao.tempoProducaoReal || 0,
+        temMolde: producao.temMolde || false,
         emProducao: producao.emProducao || false,
         problemas: producao.problemas || false,
         faltaComponentes: producao.estado === 'FALTA COMPONENTES' || false,
         localProducao: producao.localProducao || 'Interno',
+        localProducaoId: producao.localProducaoId || '',
         empresaExterna: producao.empresaExterna || '',
         linkOdoo: producao.linkOdoo || '',
         comments: producao.comments || ''
@@ -105,7 +119,9 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
       setTabelaItems(variantesToTabela(producao.variantes || []));
     } else if (!producao && isOpen) {
       // Reset form for new production
+      const nextOP = `OP-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
       setFormData({
+        codigoOP: nextOP,
         marca: '',
         cliente: '',
         referenciaInterna: '',
@@ -117,11 +133,15 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
         estado: 'Modelagem',
         dataInicio: new Date().toISOString().split('T')[0],
         dataPrevisao: '',
-        dataEstimadaEntrega: '',
+        dataFinal: '',
+        tempoProducaoEstimado: 0,
+        tempoProducaoReal: 0,
+        temMolde: false,
         emProducao: false,
         problemas: false,
         faltaComponentes: false,
         localProducao: 'Interno',
+        localProducaoId: '',
         empresaExterna: '',
         linkOdoo: '',
         comments: ''
@@ -213,6 +233,12 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     ));
   };
 
+  const generateCodigoOP = () => {
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-4);
+    const newOP = `OP-${year}-${timestamp}`;
+    setFormData(prev => ({ ...prev, codigoOP: newOP }));
+  };
   const adicionarLinha = () => {
     setTabelaItems(prev => [...prev, { 
       id: `nova-${Date.now()}`, 
@@ -245,6 +271,33 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Código OP */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-blue-900 mb-2">Código OP (Ordem de Produção)</label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="text"
+                    value={formData.codigoOP}
+                    onChange={(e) => handleChange('codigoOP', e.target.value)}
+                    className="px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-lg font-bold"
+                    required
+                    placeholder="OP-2025-0001"
+                  />
+                  {!producao && (
+                    <button
+                      type="button"
+                      onClick={generateCodigoOP}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Gerar Automático
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
           {/* Informações Básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Cliente */}
@@ -319,13 +372,17 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
             {/* Tipo de Peça */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Peça</label>
-              <input
-                type="text"
+              <select
                 value={formData.tipoPeca}
                 onChange={(e) => handleChange('tipoPeca', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
-              />
+              >
+                <option value="">Selecionar tipo de peça</option>
+                {tiposPeca.map(tipo => (
+                  <option key={tipo.id} value={tipo.nome}>{tipo.nome}</option>
+                ))}
+              </select>
             </div>
 
             {/* Género */}
@@ -404,17 +461,48 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data Estimada de Entrega</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Data Final</label>
               <input
                 type="date"
-                value={formData.dataEstimadaEntrega}
-                onChange={(e) => handleChange('dataEstimadaEntrega', e.target.value)}
+                value={formData.dataFinal}
+                onChange={(e) => handleChange('dataFinal', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
           </div>
 
+          {/* Tempos de Produção */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+              <Clock className="w-5 h-5 text-blue-600" />
+              <span>Tempos de Produção</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tempo Estimado (dias)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.tempoProducaoEstimado}
+                  onChange={(e) => handleChange('tempoProducaoEstimado', parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tempo Real (dias)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.tempoProducaoReal}
+                  onChange={(e) => handleChange('tempoProducaoReal', parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
           {/* Cores e Tamanhos */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Cores e Tamanhos</h3>
@@ -474,7 +562,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                         <input
                           type="text"
                           value={item.cor}
-                          onChange={(e) => updateItem(item.id, 'cor', e.target.value)}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            updateItem(item.id, 'cor', newValue);
+                          }}
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </td>
@@ -482,7 +573,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                         <input
                           type="text"
                           value={item.tamanho}
-                          onChange={(e) => updateItem(item.id, 'tamanho', e.target.value)}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            updateItem(item.id, 'tamanho', newValue);
+                          }}
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </td>
@@ -579,27 +673,59 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
           </div>
 
           {/* Local de Produção */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Local de Produção</label>
-              <select
-                value={formData.localProducao}
-                onChange={(e) => handleChange('localProducao', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="Interno">Interno</option>
-                <option value="Externo">Externo</option>
-              </select>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+              <Wrench className="w-5 h-5 text-green-600" />
+              <span>Local de Produção</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Local Específico</label>
+                <select
+                  value={formData.localProducaoId}
+                  onChange={(e) => {
+                    const selectedLocal = locaisProducao.find(l => l.id === e.target.value);
+                    handleChange('localProducaoId', e.target.value);
+                    if (selectedLocal) {
+                      handleChange('localProducao', selectedLocal.tipo);
+                      if (selectedLocal.tipo === 'Externo') {
+                        handleChange('empresaExterna', selectedLocal.nome);
+                      }
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Selecionar local</option>
+                  {locaisProducao.map(local => (
+                    <option key={local.id} value={local.id}>
+                      {local.nome} ({local.tipo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                <select
+                  value={formData.localProducao}
+                  onChange={(e) => handleChange('localProducao', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Interno">Interno</option>
+                  <option value="Externo">Externo</option>
+                </select>
+              </div>
             </div>
 
             {formData.localProducao === 'Externo' && (
-              <div>
+              <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Empresa Externa</label>
                 <input
                   type="text"
                   value={formData.empresaExterna}
                   onChange={(e) => handleChange('empresaExterna', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nome da empresa externa"
                 />
               </div>
             )}
@@ -630,7 +756,20 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
           </div>
 
           {/* Checkboxes */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-6 flex-wrap gap-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="temMolde"
+                checked={formData.temMolde}
+                onChange={(e) => handleChange('temMolde', e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="temMolde" className="text-sm font-medium text-gray-700">
+                Tem Molde
+              </label>
+            </div>
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"

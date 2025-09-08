@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, Clock, Plus, Edit, ChevronDown, ChevronUp, MessageSquare, Search, Filter, Copy, Building, MapPin } from 'lucide-react';
 import { etapas } from '../data/mockData';
 import { Etapa, Producao } from '../types';
 import ProducoesList from '../components/ProducoesList';
 import ProducaoForm from '../components/ProducaoForm';
 import { useProducoes } from '../hooks/useSupabaseData';
+import { useLocaisProducao } from '../hooks/useLocaisProducao';
 
 const Producoes: React.FC = () => {
   const { 
@@ -18,12 +19,17 @@ const Producoes: React.FC = () => {
     updateFinancialFlags
   } = useProducoes();
   
+  const { locaisProducao } = useLocaisProducao();
+  
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
     producao?: Producao;
   }>({ isOpen: false });
   
   const [dashboardCollapsed, setDashboardCollapsed] = useState(false);
+  const [filtroProblemas, setFiltroProblemas] = useState<'all' | 'com-problemas' | 'sem-problemas'>('all');
+  const [filtroLocal, setFiltroLocal] = useState<string>('all');
+  const [busca, setBusca] = useState('');
 
   const handleCreateProducao = async (novaProducao: Omit<Producao, 'id'>) => {
     try {
@@ -41,6 +47,34 @@ const Producoes: React.FC = () => {
       alert('Erro ao atualizar produção');
     }
     setEditModal({ isOpen: false });
+  };
+
+  const handleDuplicateProducao = async (producao: Producao) => {
+    if (confirm(`Duplicar a produção "${producao.referenciaInterna}"?`)) {
+      try {
+        const nextOP = `OP-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
+        const duplicatedProducao = {
+          ...producao,
+          codigoOP: nextOP,
+          referenciaInterna: `${producao.referenciaInterna}-COPY`,
+          referenciaCliente: `${producao.referenciaCliente}-COPY`,
+          dataInicio: new Date().toISOString().split('T')[0],
+          dataPrevisao: '',
+          dataFinal: '',
+          etapa: 'Desenvolvimento' as const,
+          estado: 'Modelagem' as const,
+          emProducao: false,
+          problemas: false,
+          tempoProducaoReal: 0,
+          comments: `Duplicado de ${producao.referenciaInterna}`
+        };
+        delete (duplicatedProducao as any).id;
+        await createProducao(duplicatedProducao);
+        alert('Produção duplicada com sucesso!');
+      } catch (err) {
+        alert('Erro ao duplicar produção');
+      }
+    }
   };
 
   const handleDeleteProducao = async (id: string) => {
@@ -75,32 +109,55 @@ const Producoes: React.FC = () => {
     return diffDays <= 3 && diffDays >= 0;
   };
 
+  const producoesFiltradasDashboard = useMemo(() => {
+    return producoes.filter(producao => {
+      const matchProblemas = filtroProblemas === 'all' || 
+        (filtroProblemas === 'com-problemas' && producao.problemas) ||
+        (filtroProblemas === 'sem-problemas' && !producao.problemas);
+      
+      const matchLocal = filtroLocal === 'all' || 
+        (filtroLocal === 'interno' && producao.localProducao === 'Interno') ||
+        (filtroLocal === 'externo' && producao.localProducao === 'Externo') ||
+        (producao.localProducaoId === filtroLocal);
+      
+      const matchBusca = busca === '' || 
+        producao.marca.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.cliente.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.referenciaInterna.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.codigoOP.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.referenciaCliente.toLowerCase().includes(busca.toLowerCase());
+      
+      return matchProblemas && matchLocal && matchBusca;
+    });
+  }, [producoes, filtroProblemas, filtroLocal, busca]);
+
   const estatisticas = useMemo(() => {
-    const total = producoes.length;
-    const emProducao = producoes.filter(p => p.emProducao || false).length;
-    const comProblemas = producoes.filter(p => p.problemas || false).length;
-    const faltaComponentes = producoes.filter(p => p.estado === 'FALTA COMPONENTES').length;
-    const atrasado = producoes.filter(p => {
+    const total = producoesFiltradasDashboard.length;
+    const emProducao = producoesFiltradasDashboard.filter(p => p.emProducao || false).length;
+    const comProblemas = producoesFiltradasDashboard.filter(p => p.problemas || false).length;
+    const faltaComponentes = producoesFiltradasDashboard.filter(p => p.estado === 'FALTA COMPONENTES').length;
+    const prontas = producoesFiltradasDashboard.filter(p => p.estado === 'Pronto').length;
+    const atrasado = producoesFiltradasDashboard.filter(p => {
       const hoje = new Date();
-      const entrega = new Date(p.dataEstimadaEntrega);
+      const entrega = new Date(p.dataFinal);
       const diffTime = entrega.getTime() - hoje.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays <= 2; // Overdue or within 2 days
     }).length;
     
     const porEtapa = etapas.reduce((acc, etapa) => {
-      acc[etapa] = producoes.filter(p => p.etapa === etapa).length;
+      acc[etapa] = producoesFiltradasDashboard.filter(p => p.etapa === etapa).length;
       return acc;
     }, {} as Record<Etapa, number>);
     
-    return { total, emProducao, comProblemas, faltaComponentes, atrasado, porEtapa };
-  }, [producoes]);
+    return { total, emProducao, comProblemas, faltaComponentes, prontas, atrasado, porEtapa };
+  }, [producoesFiltradasDashboard]);
 
   const producoesOrdenadas = useMemo(() => {
-    return [...producoes].sort((a, b) => {
+    return [...producoesFiltradasDashboard].sort((a, b) => {
       // Primeiro ordenar por urgência
-      const aUrgent = isUrgent(a.dataEstimadaEntrega);
-      const bUrgent = isUrgent(b.dataEstimadaEntrega);
+      const aUrgent = isUrgent(a.dataFinal);
+      const bUrgent = isUrgent(b.dataFinal);
       
       if (aUrgent && !bUrgent) return -1;
       if (!aUrgent && bUrgent) return 1;
@@ -108,7 +165,7 @@ const Producoes: React.FC = () => {
       // Depois por data de início (mais recente primeiro)
       return new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime();
     });
-  }, [producoes]);
+  }, [producoesFiltradasDashboard]);
 
   if (loading) {
     return (
@@ -160,7 +217,7 @@ const Producoes: React.FC = () => {
         </div>
 
         {/* Estatísticas Principais */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
               <TrendingUp className="w-6 h-6 text-green-600" />
@@ -193,6 +250,16 @@ const Producoes: React.FC = () => {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <div>
+                <div className="text-lg font-bold text-blue-700">{estatisticas.prontas}</div>
+                <div className="text-sm text-blue-600">Prontas</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center space-x-3">
               <Clock className="w-5 h-5 text-blue-600" />
               <div>
                 <div className="text-lg font-bold text-blue-700">{estatisticas.atrasado}</div>
@@ -200,6 +267,64 @@ const Producoes: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Filtros do Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          {/* Busca */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por código OP, marca, cliente..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Filtro Problemas */}
+          <div className="relative">
+            <Filter className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <select
+              value={filtroProblemas}
+              onChange={(e) => setFiltroProblemas(e.target.value as any)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">Todos os status</option>
+              <option value="com-problemas">Com Problemas</option>
+              <option value="sem-problemas">Sem Problemas</option>
+            </select>
+          </div>
+
+          {/* Filtro Local */}
+          <div className="relative">
+            <Building className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <select
+              value={filtroLocal}
+              onChange={(e) => setFiltroLocal(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">Todos os locais</option>
+              <option value="interno">Interno</option>
+              <option value="externo">Externo</option>
+              {locaisProducao.map(local => (
+                <option key={local.id} value={local.id}>{local.nome}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reset Filters */}
+          <button
+            onClick={() => {
+              setBusca('');
+              setFiltroProblemas('all');
+              setFiltroLocal('all');
+            }}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Limpar Filtros
+          </button>
         </div>
 
         {/* Estatísticas por Etapa (Compactas) */}
@@ -243,6 +368,7 @@ const Producoes: React.FC = () => {
         onUpdateFinancialFlags={updateFinancialFlags}
         onEdit={(producao) => setEditModal({ isOpen: true, producao })}
         onDelete={handleDeleteProducao}
+        onDuplicate={handleDuplicateProducao}
         showActions={true}
       />
 

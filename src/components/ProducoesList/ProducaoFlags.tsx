@@ -5,11 +5,12 @@ import { Producao } from '../../types';
 interface ProducaoFlagsProps {
   producao: Producao;
   onFlagChange: (flag: 'problemas' | 'emProducao' | 'faltaComponentes' | 'faturado' | 'pago', value: boolean) => void;
+  isPronto?: boolean;
 }
 
-const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange }) => {
+const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange, isPronto = false }) => {
   return (
-    <div className="absolute top-2 right-2 flex flex-col space-y-1">
+    <div className={`absolute ${isPronto ? 'top-10' : 'top-2'} right-2 flex flex-col space-y-1`}>
       {/* Problemas */}
       <div className="flex items-center space-x-1">
         <input

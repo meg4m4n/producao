@@ -101,6 +101,7 @@ export interface Database {
       producoes: {
         Row: {
           id: string
+          codigo_op: string
           marca_id: string
           cliente_id: string
           referencia_interna: string
@@ -112,10 +113,14 @@ export interface Database {
           estado: 'Modelagem' | 'Aguarda Componentes' | 'FALTA COMPONENTES' | 'Aguarda Malha' | 'Com Defeito' | 'Aguarda Comentários' | 'Corte' | 'Confecção' | 'Transfers' | 'Serviços Externos' | 'Embalamento'
           data_inicio: string
           data_previsao: string
-          data_estimada_entrega: string
+          data_final: string
+          tempo_producao_estimado: number
+          tempo_producao_real: number
+          tem_molde: boolean
           em_producao: boolean
           problemas: boolean
           local_producao: 'Interno' | 'Externo'
+          local_producao_id: string | null
           empresa_externa: string | null
           link_odoo: string | null
           comments: string | null
@@ -134,6 +139,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          codigo_op: string
           marca_id: string
           cliente_id: string
           referencia_interna: string
@@ -145,10 +151,14 @@ export interface Database {
           estado?: 'Modelagem' | 'Aguarda Componentes' | 'FALTA COMPONENTES' | 'Aguarda Malha' | 'Com Defeito' | 'Aguarda Comentários' | 'Corte' | 'Confecção' | 'Transfers' | 'Serviços Externos' | 'Embalamento'
           data_inicio: string
           data_previsao: string
-          data_estimada_entrega: string
+          data_final: string
+          tempo_producao_estimado?: number
+          tempo_producao_real?: number
+          tem_molde?: boolean
           em_producao?: boolean
           problemas?: boolean
           local_producao?: 'Interno' | 'Externo'
+          local_producao_id?: string | null
           empresa_externa?: string | null
           link_odoo?: string | null
           comments?: string | null
@@ -167,6 +177,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          codigo_op?: string
           marca_id?: string
           cliente_id?: string
           referencia_interna?: string
@@ -178,10 +189,14 @@ export interface Database {
           estado?: 'Modelagem' | 'Aguarda Componentes' | 'FALTA COMPONENTES' | 'Aguarda Malha' | 'Com Defeito' | 'Aguarda Comentários' | 'Corte' | 'Confecção' | 'Transfers' | 'Serviços Externos' | 'Embalamento'
           data_inicio?: string
           data_previsao?: string
-          data_estimada_entrega?: string
+          data_final?: string
+          tempo_producao_estimado?: number
+          tempo_producao_real?: number
+          tem_molde?: boolean
           em_producao?: boolean
           problemas?: boolean
           local_producao?: 'Interno' | 'Externo'
+          local_producao_id?: string | null
           empresa_externa?: string | null
           link_odoo?: string | null
           comments?: string | null
@@ -214,6 +229,63 @@ export interface Database {
             referencedColumns: ["id"]
           }
         ]
+      }
+      tipos_peca: {
+        Row: {
+          id: string
+          nome: string
+          descricao: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          descricao?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          descricao?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      locais_producao: {
+        Row: {
+          id: string
+          nome: string
+          tipo: 'Interno' | 'Externo'
+          endereco: string | null
+          contacto: string | null
+          ativo: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          tipo?: 'Interno' | 'Externo'
+          endereco?: string | null
+          contacto?: string | null
+          ativo?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          tipo?: 'Interno' | 'Externo'
+          endereco?: string | null
+          contacto?: string | null
+          ativo?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       producao_variantes: {
         Row: {
@@ -298,7 +370,7 @@ export interface Database {
     Enums: {
       genero_type: 'Masculino' | 'Feminino' | 'Unissexo'
       etapa_type: 'Desenvolvimento' | '1º proto' | '2º proto' | 'Size-Set' | 'PPS' | 'Produção' | 'Pronto' | 'Enviado'
-      estado_type: 'Modelagem' | 'Aguarda Componentes' | 'FALTA COMPONENTES' | 'Aguarda Malha' | 'Com Defeito' | 'Aguarda Comentários' | 'Corte' | 'Confecção' | 'Transfers' | 'Serviços Externos' | 'Embalamento'
+      estado_type: 'Modelagem' | 'Aguarda Componentes' | 'FALTA COMPONENTES' | 'Aguarda Malha' | 'Com Defeito' | 'Aguarda Comentários' | 'Corte' | 'Confecção' | 'Transfers' | 'Serviços Externos' | 'Embalamento' | 'Pronto'
       local_producao_type: 'Interno' | 'Externo'
       user_role: 'admin' | 'user'
     }

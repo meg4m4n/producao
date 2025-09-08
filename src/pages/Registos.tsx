@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Package, Activity, Users, Building, Search, Filter, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Activity, Users, Building, Search, Filter, Eye, MapPin, Upload } from 'lucide-react';
 import { etapas, estados } from '../data/mockData';
 import EditModal from '../components/EditModal';
 import ProducaoForm from '../components/ProducaoForm';
 import ProducaoDetailsModal from '../components/ProducaoDetailsModal';
 import ClienteForm from '../components/ClienteForm';
+import TipoPecaForm from '../components/TipoPecaForm';
+import LocalProducaoForm from '../components/LocalProducaoForm';
+import CSVUploadModal from '../components/CSVUploadModal';
 import { Producao, Cliente, Etapa, Estado } from '../types';
 import { useProducoes, useClientes } from '../hooks/useSupabaseData';
+import { useTiposPeca } from '../hooks/useTiposPeca';
+import { useLocaisProducao } from '../hooks/useLocaisProducao';
 
-type GestaoTab = 'producoes' | 'clientes' | 'etapas' | 'estados';
+type GestaoTab = 'producoes' | 'clientes' | 'tipos-peca' | 'locais-producao' | 'etapas' | 'estados';
 
 const Registos: React.FC = () => {
   const [activeTab, setActiveTab] = useState<GestaoTab>('producoes');
@@ -29,6 +34,20 @@ const Registos: React.FC = () => {
     updateCliente, 
     deleteCliente 
   } = useClientes();
+  
+  const { 
+    tiposPeca, 
+    createTipoPeca, 
+    updateTipoPeca, 
+    deleteTipoPeca 
+  } = useTiposPeca();
+  
+  const { 
+    locaisProducao, 
+    createLocalProducao, 
+    updateLocalProducao, 
+    deleteLocalProducao 
+  } = useLocaisProducao();
   
   const [etapasState, setEtapasState] = useState(etapas);
   const [estadosState, setEstadosState] = useState(estados);
@@ -61,6 +80,18 @@ const Registos: React.FC = () => {
     cliente?: Cliente;
   }>({ isOpen: false });
 
+  const [tipoPecaForm, setTipoPecaForm] = useState<{
+    isOpen: boolean;
+    tipoPeca?: any;
+  }>({ isOpen: false });
+
+  const [localProducaoForm, setLocalProducaoForm] = useState<{
+    isOpen: boolean;
+    local?: any;
+  }>({ isOpen: false });
+
+  const [csvUploadModal, setCsvUploadModal] = useState(false);
+
   // Filtrar produções
   const producoesFiltradas = React.useMemo(() => {
     return producoes.filter(producao => {
@@ -71,6 +102,7 @@ const Registos: React.FC = () => {
         producao.cliente.toLowerCase().includes(busca.toLowerCase()) ||
         producao.referenciaInterna.toLowerCase().includes(busca.toLowerCase()) ||
         producao.referenciaCliente.toLowerCase().includes(busca.toLowerCase()) ||
+        producao.codigoOP.toLowerCase().includes(busca.toLowerCase()) ||
         producao.descricao.toLowerCase().includes(busca.toLowerCase());
       
       return matchEtapa && matchEstado && matchBusca;
@@ -215,6 +247,8 @@ const Registos: React.FC = () => {
   const tabs = [
     { id: 'producoes' as GestaoTab, label: 'Produções', icon: Package },
     { id: 'clientes' as GestaoTab, label: 'Clientes', icon: Users },
+    { id: 'tipos-peca' as GestaoTab, label: 'Tipos de Peça', icon: Package },
+    { id: 'locais-producao' as GestaoTab, label: 'Locais', icon: Building },
     { id: 'etapas' as GestaoTab, label: 'Etapas', icon: Building },
     { id: 'estados' as GestaoTab, label: 'Estados', icon: Activity },
   ];
@@ -289,6 +323,9 @@ const Registos: React.FC = () => {
                   Referência
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Código OP
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Marca / Cliente
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -307,6 +344,9 @@ const Registos: React.FC = () => {
                   Entrega
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Molde
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -316,12 +356,18 @@ const Registos: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {producoesFiltradas.map((producao) => (
-                <tr key={producao.id} className="hover:bg-gray-50">
+                <tr key={producao.id} className={`hover:bg-gray-50 ${
+                  producao.estado === 'Pronto' ? 'bg-green-50 border-l-4 border-l-green-500' : ''
+                }`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{producao.referenciaInterna}</div>
                       <div className="text-sm text-gray-500">{producao.referenciaCliente}</div>
                     </div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-mono text-blue-600">{producao.codigoOP}</div>
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -357,11 +403,19 @@ const Registos: React.FC = () => {
                   
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+                      {new Date(producao.dataFinal).toLocaleDateString('pt-PT')}
                     </div>
                     <div className="text-xs text-gray-500">
                       Início: {new Date(producao.dataInicio).toLocaleDateString('pt-PT')}
                     </div>
+                  </td>
+                  
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      producao.temMolde ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {producao.temMolde ? 'Sim' : 'Não'}
+                    </span>
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -435,13 +489,22 @@ const Registos: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Gestão de Clientes e Marcas</h3>
-        <button 
-          onClick={() => setClienteForm({ isOpen: true })}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Novo Cliente</span>
-        </button>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => setCsvUploadModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Upload CSV</span>
+          </button>
+          <button 
+            onClick={() => setClienteForm({ isOpen: true })}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Novo Cliente</span>
+          </button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -478,6 +541,120 @@ const Registos: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderTiposPeca = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Tipos de Peça</h3>
+        <button 
+          onClick={() => setTipoPecaForm({ isOpen: true })}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Novo Tipo</span>
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {tiposPeca.map((tipo) => (
+          <div key={tipo.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <Package className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-gray-900">{tipo.nome}</span>
+              </div>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setTipoPecaForm({ isOpen: true, tipoPeca: tipo })}
+                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (confirm(`Remover tipo "${tipo.nome}"?`)) {
+                      deleteTipoPeca(tipo.id);
+                    }
+                  }}
+                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            
+            {tipo.descricao && (
+              <p className="text-sm text-gray-600">{tipo.descricao}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderLocaisProducao = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Gestão de Locais de Produção</h3>
+        <button 
+          onClick={() => setLocalProducaoForm({ isOpen: true })}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Novo Local</span>
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {locaisProducao.map((local) => (
+          <div key={local.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                {local.tipo === 'Interno' ? (
+                  <Building className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <MapPin className="w-5 h-5 text-orange-600" />
+                )}
+                <div>
+                  <span className="font-medium text-gray-900">{local.nome}</span>
+                  <span className={`ml-2 inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                    local.tipo === 'Interno' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                  }`}>
+                    {local.tipo}
+                  </span>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setLocalProducaoForm({ isOpen: true, local })}
+                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (confirm(`Desativar local "${local.nome}"?`)) {
+                      deleteLocalProducao(local.id);
+                    }
+                  }}
+                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            
+            {local.endereco && (
+              <p className="text-sm text-gray-600 mb-1">{local.endereco}</p>
+            )}
+            {local.contacto && (
+              <p className="text-sm text-gray-500">{local.contacto}</p>
+            )}
           </div>
         ))}
       </div>
@@ -617,6 +794,8 @@ const Registos: React.FC = () => {
         <div className="p-6">
           {activeTab === 'producoes' && renderProducoes()}
           {activeTab === 'clientes' && renderClientes()}
+          {activeTab === 'tipos-peca' && renderTiposPeca()}
+          {activeTab === 'locais-producao' && renderLocaisProducao()}
           {activeTab === 'etapas' && renderEtapas()}
           {activeTab === 'estados' && renderEstados()}
         </div>
@@ -663,6 +842,61 @@ const Registos: React.FC = () => {
         onClose={() => setClienteForm({ isOpen: false })}
         onSave={handleSaveCliente}
         cliente={clienteForm.cliente}
+      />
+
+      {/* Modal de Tipo de Peça */}
+      <TipoPecaForm
+        isOpen={tipoPecaForm.isOpen}
+        onClose={() => setTipoPecaForm({ isOpen: false })}
+        onSave={async (data) => {
+          try {
+            if (tipoPecaForm.tipoPeca) {
+              await updateTipoPeca(tipoPecaForm.tipoPeca.id, data);
+            } else {
+              await createTipoPeca(data);
+            }
+            setTipoPecaForm({ isOpen: false });
+          } catch (err) {
+            alert('Erro ao salvar tipo de peça');
+          }
+        }}
+        tipoPeca={tipoPecaForm.tipoPeca}
+      />
+
+      {/* Modal de Local de Produção */}
+      <LocalProducaoForm
+        isOpen={localProducaoForm.isOpen}
+        onClose={() => setLocalProducaoForm({ isOpen: false })}
+        onSave={async (data) => {
+          try {
+            if (localProducaoForm.local) {
+              await updateLocalProducao(localProducaoForm.local.id, data);
+            } else {
+              await createLocalProducao(data);
+            }
+            setLocalProducaoForm({ isOpen: false });
+          } catch (err) {
+            alert('Erro ao salvar local de produção');
+          }
+        }}
+        local={localProducaoForm.local}
+      />
+
+      {/* Modal de Upload CSV */}
+      <CSVUploadModal
+        isOpen={csvUploadModal}
+        onClose={() => setCsvUploadModal(false)}
+        onUpload={async (producoes) => {
+          try {
+            for (const producao of producoes) {
+              await createProducao(producao);
+            }
+            setCsvUploadModal(false);
+            alert(`${producoes.length} produções importadas com sucesso!`);
+          } catch (err) {
+            alert('Erro ao importar produções');
+          }
+        }}
       />
     </div>
   );

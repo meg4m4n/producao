@@ -19,6 +19,7 @@ const transformProducaoFromDB = (row: any, variantes: any[], bomFiles: any[] = [
 
   return {
     id: row.id,
+    codigoOP: row.codigo_op,
     marca: row.marcas?.nome || '',
     cliente: row.clientes?.nome || '',
     referenciaInterna: row.referencia_interna,
@@ -31,10 +32,14 @@ const transformProducaoFromDB = (row: any, variantes: any[], bomFiles: any[] = [
     estado: row.estado,
     dataInicio: row.data_inicio,
     dataPrevisao: row.data_previsao,
-    dataEstimadaEntrega: row.data_estimada_entrega,
+    dataFinal: row.data_final,
+    tempoProducaoEstimado: row.tempo_producao_estimado || 0,
+    tempoProducaoReal: row.tempo_producao_real || 0,
+    temMolde: row.tem_molde || false,
     emProducao: row.em_producao,
     problemas: row.problemas,
     localProducao: row.local_producao,
+    localProducaoId: row.local_producao_id,
     empresaExterna: row.empresa_externa,
     linkOdoo: row.link_odoo,
     comments: row.comments,
@@ -233,6 +238,7 @@ export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Pr
     const { data: novaProducao, error: producaoError } = await supabase
       .from('producoes')
       .insert({
+        codigo_op: producao.codigoOP,
         marca_id: marca.id,
         cliente_id: marca.cliente_id,
         referencia_interna: producao.referenciaInterna,
@@ -319,6 +325,7 @@ export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>)
     const { error: producaoError } = await supabase
       .from('producoes')
       .update({
+        codigo_op: producao.codigoOP,
         marca_id: marca.id,
         cliente_id: marca.cliente_id,
         referencia_interna: producao.referenciaInterna,

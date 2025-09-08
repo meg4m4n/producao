@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye, Copy, Archive } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../../types';
 import ProducaoFlags from './ProducaoFlags';
 import ProducaoInfo from './ProducaoInfo';
@@ -8,6 +8,8 @@ interface ProducaoCardProps {
   producao: Producao;
   onEdit?: (producao: Producao) => void;
   onDelete?: (id: string) => void;
+  onDuplicate?: (producao: Producao) => void;
+  onArchive?: (producao: Producao) => void;
   onFlagChange: (flag: 'problemas' | 'emProducao' | 'faltaComponentes' | 'faturado' | 'pago', value: boolean) => void;
   onViewDetails: (producao: Producao) => void;
   showActions?: boolean;
@@ -22,6 +24,8 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
   producao,
   onEdit,
   onDelete,
+  onDuplicate,
+  onArchive,
   onFlagChange,
   onViewDetails,
   showActions = false,
@@ -38,27 +42,38 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
   return (
     <div 
       className={`
-        rounded-lg border p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
-        ${(producao.problemas || false)
+        rounded-lg p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden
+        ${producao.estado === 'Pronto'
+          ? 'border-4 border-green-500 bg-green-50'
+          : (producao.problemas || false)
           ? 'blink-problems' 
           : producao.estado === 'FALTA COMPONENTES'
             ? 'bg-yellow-100 border-yellow-300'
-            : isUrgent(producao.dataEstimadaEntrega)
+            : isUrgent(producao.dataFinal)
               ? 'bg-red-50 border-red-300 border-l-4 border-l-red-500'
-              : 'bg-white border-gray-200'
+              : 'bg-white border border-gray-200'
         }
       `}
     >
+      {/* Special PRONTO indicator */}
+      {producao.estado === 'Pronto' && (
+        <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+          PRONTO
+        </div>
+      )}
+
       {/* Quick Action Flags */}
       <ProducaoFlags 
         producao={producao}
         onFlagChange={handleFlagChange}
+        isPronto={producao.estado === 'Pronto'}
       />
 
       {/* Título - Apenas Referência Interna */}
-      <div className="flex items-start justify-between mb-3 pr-16">
+      <div className={`flex items-start justify-between mb-3 ${producao.estado === 'Pronto' ? 'pr-16 pt-8' : 'pr-16'}`}>
         <div className="flex-1">
           <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">{producao.referenciaInterna}</h3>
+          <p className="text-sm text-blue-600 font-mono">{producao.codigoOP}</p>
           <div className="space-y-1">
             <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(producao.etapa)}`}>
               {producao.etapa}
@@ -80,16 +95,35 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
 
       {/* Actions */}
       <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-        <button
-          onClick={() => onViewDetails(producao)}
-          className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
-        >
-          <Eye className="w-3 h-3" />
-          <span className="text-xs">Resumo</span>
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onViewDetails(producao)}
+            className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
+          >
+            <Eye className="w-3 h-3" />
+            <span className="text-xs">Resumo</span>
+          </button>
+          
+          {producao.estado === 'Pronto' && (
+            <button
+              onClick={() => onArchive?.(producao)}
+              className="flex items-center space-x-1 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+            >
+              <Archive className="w-3 h-3" />
+              <span className="text-xs">Arquivar</span>
+            </button>
+          )}
+        </div>
         
         {showActions && (
           <div className="flex space-x-1">
+            <button
+              onClick={() => onDuplicate?.(producao)}
+              className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+              title="Duplicar produção"
+            >
+              <Copy className="w-3 h-3" />
+            </button>
             <button
               onClick={() => onEdit?.(producao)}
               className="p-1 text-gray-400 hover:text-blue-600 transition-colors"

@@ -38,11 +38,33 @@ const ProducaoInfo: React.FC<ProducaoInfoProps> = ({
         <div>
           <span className="text-gray-500">Entrega:</span>
           <span className="ml-1 font-bold text-red-700">
-            {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+            {new Date(producao.dataFinal).toLocaleDateString('pt-PT')}
           </span>
         </div>
       </div>
 
+      {/* Production Times */}
+      {(producao.tempoProducaoEstimado > 0 || producao.tempoProducaoReal > 0) && (
+        <div className="grid grid-cols-2 gap-1">
+          <div>
+            <span className="text-gray-500">Tempo Est.:</span>
+            <span className="ml-1 text-gray-900 font-medium">{producao.tempoProducaoEstimado}d</span>
+          </div>
+          <div>
+            <span className="text-gray-500">Tempo Real:</span>
+            <span className="ml-1 text-gray-900 font-medium">{producao.tempoProducaoReal || '-'}d</span>
+          </div>
+        </div>
+      )}
+
+      {/* Mold Status */}
+      {producao.temMolde && (
+        <div className="flex items-center space-x-1">
+          <span className="inline-flex px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+            Tem Molde
+          </span>
+        </div>
+      )}
       <div className="flex items-center space-x-1 pt-1">
         {producao.localProducao === 'Interno' ? (
           <Building className="w-3 h-3 text-blue-600" />

@@ -400,30 +400,15 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Link do Odoo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Link do Odoo</label>
-            <div className="flex items-center space-x-3">
-              <input
-                type="url"
-                value={producao.linkOdoo || ''}
-                readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
-                placeholder="Nenhum link configurado"
-              />
-              {producao.linkOdoo && (
-                <a
-                  href={producao.linkOdoo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Abrir</span>
-                </a>
-              )}
+          {/* Comentários para Impressão */}
+          {producao.comments && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Comentários</h3>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p className="text-sm text-gray-900 whitespace-pre-wrap">{producao.comments}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Botão de Fechar */}
           <div className="flex justify-end pt-4 border-t border-gray-200">

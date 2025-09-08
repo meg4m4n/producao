@@ -312,9 +312,9 @@ const PrepararComponentes: React.FC = () => {
                   
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`text-sm font-medium ${
-                      isUrgent(producao.dataEstimadaEntrega) ? 'text-red-600' : 'text-gray-900'
+                      isUrgent(producao.dataFinal) ? 'text-red-600' : 'text-gray-900'
                     }`}>
-                      {new Date(producao.dataEstimadaEntrega).toLocaleDateString('pt-PT')}
+                      {new Date(producao.dataFinal).toLocaleDateString('pt-PT')}
                     </div>
                     <div className="text-xs text-gray-500">
                       {producao.etapa}

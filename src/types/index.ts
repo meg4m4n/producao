@@ -9,11 +9,30 @@ export type Estado =
   | 'Confecção'
   | 'Transfers'
   | 'Serviços Externos'
-  | 'Embalamento';
+  | 'Embalamento'
+  | 'Pronto';
 
 export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade';
 export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade' | 'financeiro' | 'users';
 
+export interface TipoPeca {
+  id: string;
+  nome: string;
+  descricao?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LocalProducao {
+  id: string;
+  nome: string;
+  tipo: 'Interno' | 'Externo';
+  endereco?: string;
+  contacto?: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
 export interface BOMFile {
   id: string;
   name: string;
@@ -61,6 +80,7 @@ export interface ProducaoComment {
 
 export interface Producao {
   id: string;
+  codigoOP: string;
   marca: string;
   cliente: string;
   referenciaInterna: string;
@@ -76,9 +96,13 @@ export interface Producao {
   estado: Estado;
   dataInicio: string;
   dataPrevisao: string;
-  dataEstimadaEntrega: string;
+  dataFinal: string;
+  tempoProducaoEstimado: number;
+  tempoProducaoReal: number;
+  temMolde: boolean;
   emProducao?: boolean;
   localProducao: 'Interno' | 'Externo';
+  localProducaoId?: string;
   empresaExterna?: string;
   linkOdoo?: string;
   bomFiles?: BOMFile[];
