@@ -47,6 +47,13 @@ const Producoes: React.FC = () => {
   };
 
   const handleUpdateProducao = async (producaoAtualizada: Producao) => {
+    // Validate that the production has a valid ID before updating
+    if (!producaoAtualizada.id || producaoAtualizada.id.trim() === '') {
+      console.error('Cannot update production: invalid or empty ID');
+      alert('Erro: ID da produção inválido. Não é possível atualizar.');
+      return;
+    }
+
     try {
       await updateProducao(producaoAtualizada.id, producaoAtualizada);
     } catch {

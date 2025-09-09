@@ -169,6 +169,11 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     };
 
     if (producao?.id) {
+      // Ensure we have a valid ID before setting it
+      if (!producao.id || producao.id.trim() === '') {
+        alert('Erro: ID da produção inválido. Não é possível atualizar.');
+        return;
+      }
       producaoData.id = producao.id;
     }
 

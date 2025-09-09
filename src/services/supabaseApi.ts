@@ -282,6 +282,11 @@ export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Pr
 
 export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>): Promise<Producao> => {
   try {
+    // Validate ID parameter
+    if (!id || id.trim() === '') {
+      throw new Error('Invalid production ID: ID cannot be empty');
+    }
+
     // Obter marca por nome + cliente
     const { data: marcas, error: marcaError } = await supabase
       .from('marcas')
