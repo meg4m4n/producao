@@ -47,9 +47,10 @@ const Producoes: React.FC = () => {
   };
 
   const handleUpdateProducao = async (producaoAtualizada: Producao) => {
-    // Validate that the production has a valid ID before updating
-    if (!producaoAtualizada.id || producaoAtualizada.id.trim() === '') {
-      console.error('Cannot update production: invalid or empty ID');
+    // Validate that the production has a valid UUID format before updating
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!producaoAtualizada.id || producaoAtualizada.id.trim() === '' || !uuidRegex.test(producaoAtualizada.id)) {
+      console.error('Cannot update production: invalid or empty UUID', producaoAtualizada.id);
       alert('Erro: ID da produção inválido. Não é possível atualizar.');
       return;
     }
