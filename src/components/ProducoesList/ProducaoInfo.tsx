@@ -47,11 +47,11 @@ const ProducaoInfo: React.FC<ProducaoInfoProps> = ({
         <div className="grid grid-cols-2 gap-1">
           <div>
             <span className="text-gray-500">Tempo Est.:</span>
-            <span className="ml-1 text-gray-900 font-medium">{producao.tempoProducaoEstimado}d</span>
+            <span className="ml-1 text-gray-900 font-medium">{producao.tempoProducaoEstimado}min</span>
           </div>
           <div>
             <span className="text-gray-500">Tempo Real:</span>
-            <span className="ml-1 text-gray-900 font-medium">{producao.tempoProducaoReal || '-'}d</span>
+            <span className="ml-1 text-gray-900 font-medium">{producao.tempoProducaoReal || '-'}min</span>
           </div>
         </div>
       )}

@@ -498,7 +498,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tempo Estimado (dias)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tempo Estimado (minutos)</label>
                 <input
                   type="number"
                   min="0"
@@ -509,7 +509,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tempo Real (dias)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tempo Real (minutos)</label>
                 <input
                   type="number"
                   min="0"

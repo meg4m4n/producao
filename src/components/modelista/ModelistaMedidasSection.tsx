@@ -7,6 +7,7 @@ import {
   getMedidasModelistaDetalhes,
   upsertMedidasModelistaDetalhes,
 } from "../../services/supabaseApi";
+import { supabase } from "../../lib/supabase";
 import { Producao } from "../../types";
 import { Plus, Save, Trash2, Ruler, ClipboardList, Edit2, Copy } from "lucide-react";
 
@@ -44,12 +45,25 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
     [producao.variantes]
   );
 
-  const [corSel, setCorSel] = useState<string>(cores[0] || "");
-  const [tamSel, setTamSel] = useState<string>(tamanhos[0] || "");
+  const [corSel, setCorSel] = useState<string>("");
+  const [tamSel, setTamSel] = useState<string>("");
 
   const [linhas, setLinhas] = useState<LinhaEditavel[]>([]);
   const [novoNomeTabela, setNovoNomeTabela] = useState<string>("Tabela de Medidas");
   const [isEditing, setIsEditing] = useState(false);
+
+  /* ------------------------- inicializar cor/tamanho ------------------------- */
+  useEffect(() => {
+    if (cores.length > 0 && !corSel) {
+      setCorSel(cores[0]);
+    }
+  }, [cores, corSel]);
+
+  useEffect(() => {
+    if (tamanhos.length > 0 && !tamSel) {
+      setTamSel(tamanhos[0]);
+    }
+  }, [tamanhos, tamSel]);
 
   /* ------------------------------ carregar dados ------------------------------ */
 
@@ -227,14 +241,12 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
       return;
     }
     
-    // Validação
     const linhasValidas = linhas.filter((l) => l.letra_medida.trim());
     if (!linhasValidas.length) {
       alert("Adiciona pelo menos uma linha com a letra da medida.");
       return;
     }
 
-    // Verificar duplicados
     const letras = linhasValidas.map(l => l.letra_medida.trim().toUpperCase());
     const letrasDuplicadas = letras.filter((letra, index) => letras.indexOf(letra) !== index);
     if (letrasDuplicadas.length > 0) {
@@ -245,7 +257,6 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
     try {
       setLoading(true);
       
-      // Primeiro, apagar linhas existentes para esta cor/tamanho
       const { error: deleteError } = await supabase
         .from('medidas_modelista_detalhes')
         .delete()
@@ -255,7 +266,6 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
       
       if (deleteError) throw deleteError;
 
-      // Inserir novas linhas
       const payload = linhasValidas.map((l) => ({
         tabela_id: tabelaAtivaId,
         cor: corSel,
@@ -267,7 +277,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
       }));
 
       await upsertMedidasModelistaDetalhes(payload);
-      await loadLinhas(); // recarregar para apanhar ids, etc.
+      await loadLinhas();
       setIsEditing(false);
       alert(`${linhasValidas.length} medidas guardadas com sucesso!`);
     } catch (e) {
@@ -280,7 +290,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
 
   const cancelarEdicao = () => {
     setIsEditing(false);
-    loadLinhas(); // recarregar dados originais
+    loadLinhas();
   };
 
   return (
@@ -288,20 +298,22 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <ClipboardList className="w-5 h-5 text-purple-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Tabelas de Medidas (Modelista)</h3>
+          <h3 className="text-lg text-gray-900 font-semibold">Tabelas de Medidas (Modelista)</h3>
         </div>
         {isEditing && (
           <div className="flex items-center space-x-2">
             <button
+              type="button"
               onClick={cancelarEdicao}
               className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
             >
               Cancelar
             </button>
             <button
+              type="button"
               onClick={guardarLinhas}
               className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded inline-flex items-center"
-              disabled={loading}
+              disabled={loading || !isEditing}
             >
               <Save className="w-3 h-3 mr-1" />
               Guardar
@@ -336,6 +348,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                     ))}
                   </select>
                   <button
+                    type="button"
                     onClick={renomearTabelaAtual}
                     className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded"
                     disabled={!tabelaAtivaId || loading}
@@ -344,6 +357,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                     <Edit2 className="w-3 h-3" />
                   </button>
                   <button
+                    type="button"
                     onClick={apagarTabelaAtual}
                     className="px-2 py-1 text-red-600 hover:bg-red-100 rounded"
                     disabled={!tabelaAtivaId || loading}
@@ -365,6 +379,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                     placeholder="Nome da tabela"
                   />
                   <button
+                    type="button"
                     onClick={criarTabela}
                     className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm"
                     disabled={loading || !producao.id}
@@ -413,6 +428,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <button
+                  type="button"
                   onClick={addLinha}
                   className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
                   disabled={loading}
@@ -421,6 +437,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                   Linha
                 </button>
                 <button
+                  type="button"
                   onClick={addLinhasPadrao}
                   className="px-3 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded inline-flex items-center"
                   disabled={loading}
@@ -515,6 +532,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                           <td className="px-2 py-2">
                             <div className="flex items-center space-x-1">
                               <button
+                                type="button"
                                 onClick={() => duplicarLinha(idx)}
                                 className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                                 title="Duplicar linha"
@@ -522,6 +540,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                                 <Copy className="w-3 h-3" />
                               </button>
                               <button
+                                type="button"
                                 onClick={() => removeLinha(idx)}
                                 className="p-1 text-red-600 hover:bg-red-50 rounded"
                                 title="Remover linha"
@@ -548,6 +567,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
                       <span className="text-xs text-orange-600 font-medium">Alterações não guardadas</span>
                     )}
                     <button
+                      type="button"
                       onClick={guardarLinhas}
                       className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded inline-flex items-center"
                       disabled={loading || !isEditing}

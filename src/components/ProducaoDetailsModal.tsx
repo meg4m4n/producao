@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Package, ExternalLink, Building, MapPin, AlertTriangle, Clock, Printer } from 'lucide-react';
+import { X, Package, ExternalLink, Building, MapPin, AlertTriangle, Clock, Printer, Edit, Save } from 'lucide-react';
 import { Producao } from '../types';
 
 interface ProducaoDetailsModalProps {
@@ -7,14 +7,32 @@ interface ProducaoDetailsModalProps {
   onClose: () => void;
   producao: Producao | null;
   onUpdateFlags?: (flags: { problemas?: boolean; emProducao?: boolean }) => void;
+  onUpdateComments?: (comments: string) => void;
 }
 
 const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({ 
   isOpen, 
   onClose, 
   producao,
-  onUpdateFlags
+  onUpdateFlags,
+  onUpdateComments
 }) => {
+  const [editingComments, setEditingComments] = React.useState(false);
+  const [commentsText, setCommentsText] = React.useState('');
+
+  React.useEffect(() => {
+    if (producao) {
+      setCommentsText(producao.comments || '');
+    }
+  }, [producao]);
+
+  const handleSaveComments = () => {
+    if (onUpdateComments) {
+      onUpdateComments(commentsText);
+      setEditingComments(false);
+    }
+  };
+
   if (!isOpen || !producao) return null;
 
   const handlePrint = () => {
@@ -113,11 +131,11 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
                   </div>
                   <div class="info-item">
                     <span class="label">Local Produção:</span>
-                    <span class="value">${producao.localProducao === 'Interno' ? 'Interno' : (producao.empresaExterna || 'Externo')}</span>
+                    <p className="text-gray-900">{producao.tempoProducaoEstimado} minutos</p>
                   </div>
                   <div class="info-item">
                     <span class="label">Quantidade Total:</span>
-                    <span class="value">${quantidadeTotal} unidades</span>
+                    <p className="text-gray-900">{producao.tempoProducaoReal || 0} minutos</p>
                   </div>
                 </div>
               </div>
@@ -414,9 +432,50 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
           {/* Comentários para Impressão */}
           {producao.comments && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Comentários</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">Comentários</h3>
+                {!editingComments && onUpdateComments && (
+                  <button
+                    onClick={() => setEditingComments(true)}
+                    className="flex items-center space-x-1 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors print:hidden"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Editar</span>
+                  </button>
+                )}
+              </div>
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">{producao.comments}</p>
+                {editingComments ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={commentsText}
+                      onChange={(e) => setCommentsText(e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      placeholder="Adicione comentários sobre a produção..."
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingComments(false);
+                          setCommentsText(producao.comments || '');
+                        }}
+                        className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveComments}
+                        className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        <Save className="w-3 h-3" />
+                        <span>Guardar</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{producao.comments}</p>
+                )}
               </div>
             </div>
           )}

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Ruler, Save, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Search, Ruler, Save, AlertTriangle, CheckCircle2, Plus, Copy, Trash2 } from 'lucide-react';
 import { useProducoes } from '../hooks/useSupabaseData';
 import { Producao, MedidaModelistaDetalhe, QCMedida } from '../types';
 import {
@@ -240,27 +240,48 @@ const ControloQualidade: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-900">Medidas</h2>
-            <button
-              onClick={guardarRegisto}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Save className="w-4 h-4" />
-              <span>Guardar Registo</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {spec === null && (
+                <button
+                  onClick={() => setLinhasQC(prev => [...prev, {
+                    id: 'tmp-' + (prev.length + 1),
+                    registo_id: '',
+                    letra_medida: '',
+                    descricao_medida: '',
+                    medida_pedida_modelista: null,
+                    tolerancia_modelista: null,
+                    medida_registada: 0,
+                    desvio: null,
+                    passou_controlo: null,
+                  }])}
+                  className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Linha
+                </button>
+              )}
+              <button
+                onClick={guardarRegisto}
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <Save className="w-4 h-4" />
+                <span>Guardar Registo</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left bg-gray-50">
-                  <th className="px-3 py-2">Letra</th>
-                  <th className="px-3 py-2">Descrição</th>
-                  <th className="px-3 py-2">Pedida (cm)</th>
-                  <th className="px-3 py-2">Tol. (cm)</th>
-                  <th className="px-3 py-2">Registada (cm)</th>
-                  <th className="px-3 py-2">Desvio</th>
-                  <th className="px-3 py-2">Passou</th>
-                  {spec === null && <th className="px-3 py-2"></th>}
+            <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-2 py-2 w-16">Letra</th>
+                  <th className="text-left px-2 py-2">Descrição</th>
+                  <th className="text-left px-2 py-2 w-24">Pedida (cm)</th>
+                  <th className="text-left px-2 py-2 w-24">Tol. (±cm)</th>
+                  <th className="text-left px-2 py-2 w-24">Registada (cm)</th>
+                  <th className="text-left px-2 py-2 w-20">Desvio</th>
+                  <th className="text-left px-2 py-2 w-20">Passou</th>
+                  {spec === null && <th className="px-2 py-2 w-20">Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -275,8 +296,8 @@ const ControloQualidade: React.FC = () => {
                       : null;
 
                   return (
-                    <tr key={l.id} className="border-t">
-                      <td className="px-3 py-2">
+                    <tr key={l.id} className="border-t hover:bg-gray-50">
+                      <td className="px-2 py-2">
                         <input
                           disabled={!!spec}
                           value={l.letra_medida}
@@ -284,10 +305,12 @@ const ControloQualidade: React.FC = () => {
                             const v = e.target.value;
                             setLinhasQC(prev => prev.map((row, i) => i === idx ? { ...row, letra_medida: v } : row));
                           }}
-                          className="w-20 border rounded px-2 py-1"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center font-mono"
+                          placeholder="A"
+                          maxLength={3}
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2">
                         <input
                           disabled={!!spec}
                           value={l.descricao_medida}
@@ -295,24 +318,25 @@ const ControloQualidade: React.FC = () => {
                             const v = e.target.value;
                             setLinhasQC(prev => prev.map((row, i) => i === idx ? { ...row, descricao_medida: v } : row));
                           }}
-                          className="w-64 border rounded px-2 py-1"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          placeholder="Ex.: Peito 1/2, Comprimento..."
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2">
                         <input
                           disabled
                           value={l.medida_pedida_modelista ?? ''}
-                          className="w-24 border rounded px-2 py-1 bg-gray-50"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center bg-gray-50"
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2">
                         <input
                           disabled
                           value={l.tolerancia_modelista ?? ''}
-                          className="w-20 border rounded px-2 py-1 bg-gray-50"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center bg-gray-50"
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2">
                         <input
                           type="number"
                           step="0.1"
@@ -321,13 +345,18 @@ const ControloQualidade: React.FC = () => {
                             const v = Number(e.target.value);
                             setLinhasQC(prev => prev.map((row, i) => i === idx ? { ...row, medida_registada: v } : row));
                           }}
-                          className="w-24 border rounded px-2 py-1"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center"
                         />
                       </td>
-                      <td className="px-3 py-2">
-                        {desvio != null ? desvio.toFixed(1) : '-'}
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-sm font-medium ${
+                          desvio === null ? 'text-gray-500' :
+                          Math.abs(desvio) <= (l.tolerancia_modelista || 0) ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {desvio != null ? desvio.toFixed(1) : '-'}
+                        </span>
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2 text-center">
                         {passou == null ? '-' : (
                           passou
                             ? <span className="inline-flex items-center text-green-700"><CheckCircle2 className="w-4 h-4 mr-1" />OK</span>
@@ -335,13 +364,31 @@ const ControloQualidade: React.FC = () => {
                         )}
                       </td>
                       {spec === null && (
-                        <td className="px-3 py-2">
-                          <button
-                            onClick={() => setLinhasQC(prev => prev.filter((_, i) => i !== idx))}
-                            className="text-red-600 hover:underline"
-                          >
-                            Remover
-                          </button>
+                        <td className="px-2 py-2">
+                          <div className="flex items-center space-x-1">
+                            <button
+                              onClick={() => {
+                                const linhaToDuplicate = linhasQC[idx];
+                                const novaLinha = {
+                                  ...linhaToDuplicate,
+                                  id: 'tmp-' + Date.now(),
+                                  letra_medida: linhaToDuplicate.letra_medida + "'",
+                                };
+                                setLinhasQC(prev => [...prev.slice(0, idx + 1), novaLinha, ...prev.slice(idx + 1)]);
+                              }}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              title="Duplicar linha"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => setLinhasQC(prev => prev.filter((_, i) => i !== idx))}
+                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              title="Remover linha"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -350,32 +397,6 @@ const ControloQualidade: React.FC = () => {
               </tbody>
             </table>
           </div>
-
-          {spec === null && (
-            <div className="pt-3">
-              <button
-                onClick={() =>
-                  setLinhasQC(prev => [
-                    ...prev,
-                    {
-                      id: 'tmp-' + (prev.length + 1),
-                      registo_id: '',
-                      letra_medida: '',
-                      descricao_medida: '',
-                      medida_pedida_modelista: null,
-                      tolerancia_modelista: null,
-                      medida_registada: 0,
-                      desvio: null,
-                      passou_controlo: null,
-                    },
-                  ])
-                }
-                className="px-3 py-1.5 border rounded-lg hover:bg-gray-50"
-              >
-                + Adicionar linha
-              </button>
-            </div>
-          )}
         </div>
       )}
 

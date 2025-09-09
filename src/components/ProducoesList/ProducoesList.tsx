@@ -12,6 +12,7 @@ interface ProducoesListProps {
   onDuplicate?: (producao: Producao) => void;
   onUpdateFlags?: (id: string, flags: { problemas?: boolean; emProducao?: boolean; faltaComponentes?: boolean }) => void;
   onUpdateFinancialFlags?: (id: string, flags: { faturado?: boolean; pago?: boolean }) => void;
+  onUpdateComments?: (id: string, comments: string) => void;
   showActions?: boolean;
   /** escala dos cards (ex.: 0.8 = 80%). default 1 */
   scale?: number;
@@ -24,6 +25,7 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
   onDuplicate,
   onUpdateFlags,
   onUpdateFinancialFlags,
+  onUpdateComments,
   showActions = false,
   scale = 1,
 }) => {
@@ -229,6 +231,11 @@ const ProducoesList: React.FC<ProducoesListProps> = ({
         onUpdateFlags={(flags) => {
           if (detailsModal.producao && onUpdateFlags) {
             onUpdateFlags(detailsModal.producao.id, flags);
+          }
+        }}
+        onUpdateComments={(comments) => {
+          if (detailsModal.producao && onUpdateComments) {
+            onUpdateComments(detailsModal.producao.id, comments);
           }
         }}
       />

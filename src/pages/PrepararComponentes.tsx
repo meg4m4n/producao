@@ -491,6 +491,11 @@ const PrepararComponentes: React.FC = () => {
             updateFlags(detailsModal.producao.id, flags);
           }
         }}
+        onUpdateComments={(comments) => {
+          if (detailsModal.producao) {
+            updateComments(detailsModal.producao.id, comments);
+          }
+        }}
       />
 
       {/* Modal de Histórico */}

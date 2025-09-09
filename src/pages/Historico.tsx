@@ -368,6 +368,9 @@ const Historico: React.FC = () => {
         isOpen={detailsModal.isOpen}
         onClose={() => setDetailsModal({ isOpen: false, producao: null })}
         producao={detailsModal.producao}
+        onUpdateComments={(comments) => {
+          // Read-only in history, but we need to pass the prop
+        }}
       />
     </div>
   );

@@ -9,6 +9,8 @@ import ProducoesList from '../components/ProducoesList';
 import ProducaoForm from '../components/ProducaoForm';
 import { useProducoes } from '../hooks/useSupabaseData';
 import { useLocaisProducao } from '../hooks/useLocaisProducao';
+// 🔹 importar a função correta
+import { updateProducaoComments } from '../services/supabaseApi';
 
 const Producoes: React.FC = () => {
   const {
@@ -47,7 +49,7 @@ const Producoes: React.FC = () => {
   };
 
   const handleUpdateProducao = async (producaoAtualizada: Producao) => {
-    // Validate that the production has a valid UUID format before updating
+    // Validate que o ID é UUID válido
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!producaoAtualizada.id || producaoAtualizada.id.trim() === '' || !uuidRegex.test(producaoAtualizada.id)) {
       console.error('Cannot update production: invalid or empty UUID', producaoAtualizada.id);
@@ -430,6 +432,8 @@ const Producoes: React.FC = () => {
           producoes={producoesOrdenadas}
           onUpdateFlags={updateFlags}
           onUpdateFinancialFlags={updateFinancialFlags}
+          // 🔹 agora usa o nome correto
+          onUpdateComments={updateProducaoComments}
           onEdit={(producao) => setEditModal({ isOpen: true, producao })}
           onDelete={handleDeleteProducao}
           onDuplicate={handleDuplicateProducao}
