@@ -5,11 +5,10 @@ import {
   updateTabelaMedidasModelista,
   deleteTabelaMedidasModelista,
   getMedidasModelistaDetalhes,
-  getModelistaSpecFor,
   upsertMedidasModelistaDetalhes,
 } from "../../services/supabaseApi";
 import { Producao } from "../../types";
-import { Plus, Save, Trash2, Ruler, ClipboardList } from "lucide-react";
+import { Plus, Save, Trash2, Ruler, ClipboardList, Edit2, Copy } from "lucide-react";
 
 /**
  * Secção de TABELAS DE MEDIDAS (Modelista) para uma Produção já gravada (com id).
@@ -50,6 +49,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
 
   const [linhas, setLinhas] = useState<LinhaEditavel[]>([]);
   const [novoNomeTabela, setNovoNomeTabela] = useState<string>("Tabela de Medidas");
+  const [isEditing, setIsEditing] = useState(false);
 
   /* ------------------------------ carregar dados ------------------------------ */
 
@@ -77,9 +77,6 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
     }
     try {
       setLoading(true);
-      // Podes usar getMedidasModelistaDetalhes(tabelaAtivaId) e filtrar por cor/tamanho,
-      // ou diretamente a spec mais recente para esta produção/cor/tamanho.
-      // Aqui usamos a tabela escolhida + filtro local (para manteres histórico por tabela):
       const todas = await getMedidasModelistaDetalhes(tabelaAtivaId);
       const filtradas = todas
         .filter((l) => l.cor === corSel && l.tamanho === tamSel)
@@ -91,6 +88,7 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
           tolerancia: l.tolerancia ?? null,
         }));
       setLinhas(filtradas);
+      setIsEditing(false);
     } catch (e) {
       console.error(e);
       alert("Erro ao carregar linhas da tabela da modelista.");
@@ -127,7 +125,8 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
       } as any);
       await loadTabelas();
       setTabelaAtivaId(criada.id);
-      alert("Tabela criada.");
+      setNovoNomeTabela("Tabela de Medidas");
+      alert("Tabela criada com sucesso!");
     } catch (e) {
       console.error(e);
       alert("Erro ao criar tabela.");
@@ -138,16 +137,17 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
 
   const renomearTabelaAtual = async () => {
     if (!tabelaAtivaId) return;
-    const novoNome = prompt("Novo nome da tabela:", (tabelas.find(t => t.id === tabelaAtivaId)?.nome_tabela) || "");
-    if (!novoNome) return;
+    const tabelaAtual = tabelas.find(t => t.id === tabelaAtivaId);
+    const novoNome = prompt("Novo nome da tabela:", tabelaAtual?.nome_tabela || "");
+    if (!novoNome || novoNome.trim() === tabelaAtual?.nome_tabela) return;
     try {
       setLoading(true);
-      await updateTabelaMedidasModelista(tabelaAtivaId, { nome_tabela: novoNome });
+      await updateTabelaMedidasModelista(tabelaAtivaId, { nome_tabela: novoNome.trim() });
       await loadTabelas();
-      alert("Tabela atualizada.");
+      alert("Tabela renomeada com sucesso!");
     } catch (e) {
       console.error(e);
-      alert("Erro ao atualizar tabela.");
+      alert("Erro ao renomear tabela.");
     } finally {
       setLoading(false);
     }
@@ -155,14 +155,15 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
 
   const apagarTabelaAtual = async () => {
     if (!tabelaAtivaId) return;
-    if (!confirm("Apagar esta tabela e TODAS as suas linhas?")) return;
+    const tabelaAtual = tabelas.find(t => t.id === tabelaAtivaId);
+    if (!confirm(`Apagar a tabela "${tabelaAtual?.nome_tabela}" e TODAS as suas medidas?\n\nEsta ação não pode ser desfeita.`)) return;
     try {
       setLoading(true);
       await deleteTabelaMedidasModelista(tabelaAtivaId);
       setTabelaAtivaId(null);
       await loadTabelas();
       setLinhas([]);
-      alert("Tabela apagada.");
+      alert("Tabela apagada com sucesso!");
     } catch (e) {
       console.error(e);
       alert("Erro ao apagar tabela.");
@@ -174,23 +175,50 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
   /* ------------------------------ editar linhas ------------------------------ */
 
   const addLinha = () => {
-    setLinhas((prev) => [
-      ...prev,
-      {
-        letra_medida: "",
-        descricao_medida: "",
-        medida_pedida: null,
-        tolerancia: null,
-      },
-    ]);
+    const novaLinha: LinhaEditavel = {
+      letra_medida: "",
+      descricao_medida: "",
+      medida_pedida: null,
+      tolerancia: null,
+    };
+    setLinhas((prev) => [...prev, novaLinha]);
+    setIsEditing(true);
+  };
+
+  const addLinhasPadrao = () => {
+    const linhasPadrao: LinhaEditavel[] = [
+      { letra_medida: "A", descricao_medida: "Peito 1/2", medida_pedida: null, tolerancia: 0.5 },
+      { letra_medida: "B", descricao_medida: "Comprimento", medida_pedida: null, tolerancia: 1.0 },
+      { letra_medida: "C", descricao_medida: "Ombro", medida_pedida: null, tolerancia: 0.5 },
+      { letra_medida: "D", descricao_medida: "Manga", medida_pedida: null, tolerancia: 1.0 },
+      { letra_medida: "E", descricao_medida: "Punho", medida_pedida: null, tolerancia: 0.5 },
+    ];
+    setLinhas(linhasPadrao);
+    setIsEditing(true);
+  };
+
+  const duplicarLinha = (idx: number) => {
+    const linhaToDuplicate = linhas[idx];
+    const novaLinha = {
+      ...linhaToDuplicate,
+      id: undefined, // nova linha
+      letra_medida: linhaToDuplicate.letra_medida + "'",
+    };
+    setLinhas((prev) => [...prev.slice(0, idx + 1), novaLinha, ...prev.slice(idx + 1)]);
+    setIsEditing(true);
   };
 
   const updateLinha = (idx: number, patch: Partial<LinhaEditavel>) => {
     setLinhas((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
+    setIsEditing(true);
   };
 
   const removeLinha = (idx: number) => {
+    if (linhas.length === 1) {
+      if (!confirm("Remover a última linha? A tabela ficará vazia para esta cor/tamanho.")) return;
+    }
     setLinhas((prev) => prev.filter((_, i) => i !== idx));
+    setIsEditing(true);
   };
 
   const guardarLinhas = async () => {
@@ -198,39 +226,88 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
       alert("Escolhe uma Tabela, Cor e Tamanho.");
       return;
     }
-    // validação mínima
+    
+    // Validação
     const linhasValidas = linhas.filter((l) => l.letra_medida.trim());
     if (!linhasValidas.length) {
-      alert("Adiciona pelo menos uma linha com a letra/medida.");
+      alert("Adiciona pelo menos uma linha com a letra da medida.");
       return;
     }
+
+    // Verificar duplicados
+    const letras = linhasValidas.map(l => l.letra_medida.trim().toUpperCase());
+    const letrasDuplicadas = letras.filter((letra, index) => letras.indexOf(letra) !== index);
+    if (letrasDuplicadas.length > 0) {
+      alert(`Letras duplicadas encontradas: ${letrasDuplicadas.join(', ')}\nCada letra deve ser única.`);
+      return;
+    }
+
     try {
       setLoading(true);
+      
+      // Primeiro, apagar linhas existentes para esta cor/tamanho
+      const { error: deleteError } = await supabase
+        .from('medidas_modelista_detalhes')
+        .delete()
+        .eq('tabela_id', tabelaAtivaId)
+        .eq('cor', corSel)
+        .eq('tamanho', tamSel);
+      
+      if (deleteError) throw deleteError;
+
+      // Inserir novas linhas
       const payload = linhasValidas.map((l) => ({
         tabela_id: tabelaAtivaId,
         cor: corSel,
         tamanho: tamSel,
-        letra_medida: l.letra_medida.trim(),
+        letra_medida: l.letra_medida.trim().toUpperCase(),
         descricao_medida: l.descricao_medida?.trim() || "",
         medida_pedida: l.medida_pedida ?? null,
         tolerancia: l.tolerancia ?? null,
       }));
+
       await upsertMedidasModelistaDetalhes(payload);
       await loadLinhas(); // recarregar para apanhar ids, etc.
-      alert("Medidas guardadas.");
+      setIsEditing(false);
+      alert(`${linhasValidas.length} medidas guardadas com sucesso!`);
     } catch (e) {
       console.error(e);
-      alert("Erro a guardar medidas.");
+      alert("Erro ao guardar medidas.");
     } finally {
       setLoading(false);
     }
   };
 
+  const cancelarEdicao = () => {
+    setIsEditing(false);
+    loadLinhas(); // recarregar dados originais
+  };
+
   return (
     <div className="mt-6 border-t border-gray-200 pt-4">
-      <div className="flex items-center space-x-2 mb-3">
-        <ClipboardList className="w-5 h-5 text-purple-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Tabelas de Medidas (Modelista)</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <ClipboardList className="w-5 h-5 text-purple-600" />
+          <h3 className="text-lg font-semibold text-gray-900">Tabelas de Medidas (Modelista)</h3>
+        </div>
+        {isEditing && (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={cancelarEdicao}
+              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={guardarLinhas}
+              className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded inline-flex items-center"
+              disabled={loading}
+            >
+              <Save className="w-3 h-3 mr-1" />
+              Guardar
+            </button>
+          </div>
+        )}
       </div>
 
       {!producao.id ? (
@@ -239,198 +316,255 @@ const ModelistaMedidasSection: React.FC<Props> = ({ producao }) => {
         </div>
       ) : (
         <>
-          {/* Barra de Tabelas */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-            <div className="flex flex-col md:flex-row md:items-center md:space-x-3 space-y-3 md:space-y-0">
-              <div className="flex-1">
-                <label className="text-xs text-gray-600">Tabelas existentes</label>
-                <select
-                  value={tabelaAtivaId ?? ""}
-                  onChange={(e) => setTabelaAtivaId(e.target.value || null)}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-white"
-                >
-                  <option value="">— selecionar —</option>
-                  {tabelas.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nome_tabela} • {new Date(t.data_registo).toLocaleDateString("pt-PT")}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex-1">
-                <label className="text-xs text-gray-600">Criar nova tabela</label>
-                <div className="flex mt-1 space-x-2">
-                  <input
-                    value={novoNomeTabela}
-                    onChange={(e) => setNovoNomeTabela(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="Nome da tabela (ex.: Tabela V1)"
-                  />
-                  <button
-                    onClick={criarTabela}
-                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg inline-flex items-center"
-                    disabled={loading || !producao.id}
-                    title="Criar nova tabela"
+          {/* Gestão de Tabelas - Compacta */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {/* Selecionar Tabela */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tabela Ativa</label>
+                <div className="flex space-x-1">
+                  <select
+                    value={tabelaAtivaId ?? ""}
+                    onChange={(e) => setTabelaAtivaId(e.target.value || null)}
+                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded bg-white"
                   >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Criar
+                    <option value="">— selecionar —</option>
+                    {tabelas.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome_tabela} • {new Date(t.data_registo).toLocaleDateString("pt-PT")}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={renomearTabelaAtual}
+                    className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded"
+                    disabled={!tabelaAtivaId || loading}
+                    title="Renomear tabela"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={apagarTabelaAtual}
+                    className="px-2 py-1 text-red-600 hover:bg-red-100 rounded"
+                    disabled={!tabelaAtivaId || loading}
+                    title="Apagar tabela"
+                  >
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={renomearTabelaAtual}
-                  className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg disabled:opacity-50"
-                  disabled={!tabelaAtivaId || loading}
-                >
-                  Renomear
-                </button>
-                <button
-                  onClick={apagarTabelaAtual}
-                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 inline-flex items-center"
-                  disabled={!tabelaAtivaId || loading}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Apagar
-                </button>
+              {/* Criar Nova Tabela */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nova Tabela</label>
+                <div className="flex space-x-1">
+                  <input
+                    value={novoNomeTabela}
+                    onChange={(e) => setNovoNomeTabela(e.target.value)}
+                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                    placeholder="Nome da tabela"
+                  />
+                  <button
+                    onClick={criarTabela}
+                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm"
+                    disabled={loading || !producao.id}
+                    title="Criar nova tabela"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Cor e Tamanho */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cor / Tamanho</label>
+                <div className="flex space-x-1">
+                  <select
+                    value={corSel}
+                    onChange={(e) => setCorSel(e.target.value)}
+                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded bg-white"
+                    disabled={!tabelaAtivaId}
+                  >
+                    {cores.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={tamSel}
+                    onChange={(e) => setTamSel(e.target.value)}
+                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded bg-white"
+                    disabled={!tabelaAtivaId}
+                  >
+                    {tamanhos.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Filtros Cor/Tamanho */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-            <div>
-              <label className="text-xs text-gray-600">Cor</label>
-              <select
-                value={corSel}
-                onChange={(e) => setCorSel(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-white"
-              >
-                {cores.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+          {/* Ações Rápidas */}
+          {tabelaAtivaId && (
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={addLinha}
+                  className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
+                  disabled={loading}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Linha
+                </button>
+                <button
+                  onClick={addLinhasPadrao}
+                  className="px-3 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded inline-flex items-center"
+                  disabled={loading}
+                >
+                  <Ruler className="w-3 h-3 mr-1" />
+                  Medidas Padrão
+                </button>
+              </div>
+              
+              {linhas.length > 0 && (
+                <div className="text-xs text-gray-500">
+                  {linhas.length} medida(s) • {corSel} • {tamSel}
+                  {isEditing && <span className="text-orange-600 ml-2">• Não guardado</span>}
+                </div>
+              )}
             </div>
-            <div>
-              <label className="text-xs text-gray-600">Tamanho</label>
-              <select
-                value={tamSel}
-                onChange={(e) => setTamSel(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-white"
-              >
-                {tamanhos.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={addLinha}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg inline-flex items-center"
-                disabled={!tabelaAtivaId || loading}
-              >
-                <Ruler className="w-4 h-4 mr-1" />
-                Adicionar linha
-              </button>
-            </div>
-          </div>
+          )}
 
-          {/* Grid de linhas */}
-          <div className="overflow-auto rounded-lg border border-gray-200">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-3 py-2">Letra</th>
-                  <th className="text-left px-3 py-2">Descrição</th>
-                  <th className="text-left px-3 py-2">Medida Pedida</th>
-                  <th className="text-left px-3 py-2">Tolerância</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhas.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-4 text-center text-gray-500">
-                      Sem linhas para esta Cor/Tamanho. Adiciona com “Adicionar linha”.
-                    </td>
-                  </tr>
-                ) : (
-                  linhas.map((linha, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="px-3 py-2">
-                        <input
-                          value={linha.letra_medida}
-                          onChange={(e) => updateLinha(idx, { letra_medida: e.target.value })}
-                          className="w-24 px-2 py-1 border border-gray-300 rounded"
-                          placeholder="A, B, C…"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={linha.descricao_medida}
-                          onChange={(e) => updateLinha(idx, { descricao_medida: e.target.value })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded"
-                          placeholder="Ex.: Peito 1/2"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          value={linha.medida_pedida ?? ""}
-                          onChange={(e) =>
-                            updateLinha(idx, {
-                              medida_pedida: e.target.value === "" ? null : Number(e.target.value),
-                            })
-                          }
-                          className="w-28 px-2 py-1 border border-gray-300 rounded"
-                          placeholder="cm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          value={linha.tolerancia ?? ""}
-                          onChange={(e) =>
-                            updateLinha(idx, {
-                              tolerancia: e.target.value === "" ? null : Number(e.target.value),
-                            })
-                          }
-                          className="w-28 px-2 py-1 border border-gray-300 rounded"
-                          placeholder="± cm"
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          onClick={() => removeLinha(idx)}
-                          className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
-                          title="Remover linha"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+          {/* Grid de linhas - Compacto */}
+          {tabelaAtivaId && (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-2 py-2 w-16">Letra</th>
+                      <th className="text-left px-2 py-2">Descrição</th>
+                      <th className="text-left px-2 py-2 w-24">Pedida (cm)</th>
+                      <th className="text-left px-2 py-2 w-24">Tol. (±cm)</th>
+                      <th className="px-2 py-2 w-20">Ações</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {linhas.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-3 py-6 text-center text-gray-500">
+                          <div className="flex flex-col items-center space-y-2">
+                            <Ruler className="w-8 h-8 text-gray-400" />
+                            <p>Sem medidas para {corSel} • {tamSel}</p>
+                            <p className="text-xs">Clica em "Linha" ou "Medidas Padrão" para começar</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      linhas.map((linha, idx) => (
+                        <tr key={idx} className="border-t hover:bg-gray-50">
+                          <td className="px-2 py-2">
+                            <input
+                              value={linha.letra_medida}
+                              onChange={(e) => updateLinha(idx, { letra_medida: e.target.value })}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center font-mono"
+                              placeholder="A"
+                              maxLength={3}
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              value={linha.descricao_medida}
+                              onChange={(e) => updateLinha(idx, { descricao_medida: e.target.value })}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              placeholder="Ex.: Peito 1/2, Comprimento..."
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={linha.medida_pedida ?? ""}
+                              onChange={(e) =>
+                                updateLinha(idx, {
+                                  medida_pedida: e.target.value === "" ? null : Number(e.target.value),
+                                })
+                              }
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center"
+                              placeholder="0.0"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={linha.tolerancia ?? ""}
+                              onChange={(e) =>
+                                updateLinha(idx, {
+                                  tolerancia: e.target.value === "" ? null : Number(e.target.value),
+                                })
+                              }
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center"
+                              placeholder="0.5"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => duplicarLinha(idx)}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                title="Duplicar linha"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => removeLinha(idx)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Remover linha"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Ações */}
-          <div className="mt-3 flex justify-end">
-            <button
-              onClick={guardarLinhas}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg inline-flex items-center disabled:opacity-50"
-              disabled={!tabelaAtivaId || loading}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Guardar Medidas
-            </button>
+              {/* Footer com ações */}
+              {linhas.length > 0 && (
+                <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-xs text-gray-600">
+                    {linhas.filter(l => l.letra_medida.trim()).length} de {linhas.length} linhas válidas
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {isEditing && (
+                      <span className="text-xs text-orange-600 font-medium">Alterações não guardadas</span>
+                    )}
+                    <button
+                      onClick={guardarLinhas}
+                      className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded inline-flex items-center"
+                      disabled={loading || !isEditing}
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Guardar Medidas
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Info Helper */}
+          <div className="mt-3 text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded p-2">
+            <p><strong>Dica:</strong> Use "Medidas Padrão" para começar rapidamente com as medidas mais comuns (A-E). 
+            Pode duplicar linhas e personalizar conforme necessário.</p>
           </div>
         </>
       )}
