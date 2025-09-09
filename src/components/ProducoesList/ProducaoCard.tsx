@@ -55,25 +55,22 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
         }
       `}
     >
-      {/* Special PRONTO indicator */}
       {producao.estado === 'Pronto' && (
         <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold">
           PRONTO
         </div>
       )}
 
-      {/* Quick Action Flags */}
       <ProducaoFlags 
         producao={producao}
         onFlagChange={handleFlagChange}
         isPronto={producao.estado === 'Pronto'}
       />
 
-      {/* Título - Apenas Referência Interna */}
       <div className={`flex items-start justify-between mb-3 ${producao.estado === 'Pronto' ? 'pr-16 pt-8' : 'pr-16'}`}>
         <div className="flex-1">
           <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">{producao.referenciaInterna}</h3>
-          <p className="text-sm text-blue-600 font-mono">{producao.codigoOP}</p>
+          {!!producao.codigoOP && <p className="text-sm text-blue-600 font-mono">{producao.codigoOP}</p>}
           <div className="space-y-1">
             <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${getEtapaColor(producao.etapa)}`}>
               {producao.etapa}
@@ -86,14 +83,12 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
         </div>
       </div>
 
-      {/* Informações Principais */}
       <ProducaoInfo 
         producao={producao}
         getQuantidadeTotal={getQuantidadeTotal}
         getTamanhosResumo={getTamanhosResumo}
       />
 
-      {/* Actions */}
       <div className="flex justify-between items-center pt-2 border-t border-gray-200">
         <div className="flex space-x-2">
           <button
@@ -134,6 +129,7 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
             <button
               onClick={() => onDelete?.(producao.id)}
               className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+              title="Eliminar produção"
             >
               <Trash2 className="w-3 h-3" />
             </button>
@@ -141,7 +137,6 @@ const ProducaoCard: React.FC<ProducaoCardProps> = ({
         )}
       </div>
 
-      {/* Status Bar */}
       <div className={`
         absolute bottom-0 left-0 right-0 py-0.5 px-2 text-center text-xs font-bold tracking-wide
         ${(producao.emProducao || false)

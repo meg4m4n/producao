@@ -19,10 +19,11 @@ const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange, i
           checked={producao.problemas || false}
           onChange={(e) => onFlagChange('problemas', e.target.checked)}
           className="w-3 h-3 text-red-600 border-gray-300 rounded focus:ring-red-500"
+          title="Marcar como tendo problemas"
         />
         <AlertTriangle 
           className={`w-3 h-3 ${producao.problemas ? 'text-red-600' : 'text-gray-300'}`}
-          title="Marcar como tendo problemas"
+          title="Problemas"
         />
       </div>
 
@@ -34,10 +35,11 @@ const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange, i
           checked={producao.emProducao || false}
           onChange={(e) => onFlagChange('emProducao', e.target.checked)}
           className="w-3 h-3 text-green-600 border-gray-300 rounded focus:ring-green-500"
+          title="Marcar como em produção"
         />
         <Package 
           className={`w-3 h-3 ${producao.emProducao ? 'text-green-600' : 'text-gray-300'}`}
-          title="Marcar como em produção"
+          title="Em Produção"
         />
       </div>
 
@@ -49,10 +51,11 @@ const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange, i
           checked={producao.estado === 'FALTA COMPONENTES'}
           onChange={(e) => onFlagChange('faltaComponentes', e.target.checked)}
           className="w-3 h-3 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+          title="Marcar como falta componentes"
         />
         <Clock 
           className={`w-3 h-3 ${producao.estado === 'FALTA COMPONENTES' ? 'text-yellow-600' : 'text-gray-300'}`}
-          title="Marcar como falta componentes"
+          title="Falta Componentes"
         />
       </div>
 
@@ -64,10 +67,11 @@ const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange, i
           checked={producao.faturado || false}
           onChange={(e) => onFlagChange('faturado', e.target.checked)}
           className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          title="Marcar como faturado"
         />
         <File
           className={`w-3 h-3 ${producao.faturado ? 'text-blue-600' : 'text-gray-300'}`}
-          title="Marcar como faturado"
+          title="Faturado"
         />
       </div>
 
@@ -79,10 +83,11 @@ const ProducaoFlags: React.FC<ProducaoFlagsProps> = ({ producao, onFlagChange, i
           checked={producao.pago || false}
           onChange={(e) => onFlagChange('pago', e.target.checked)}
           className="w-3 h-3 text-green-600 border-gray-300 rounded focus:ring-green-500"
+          title="Marcar como pago"
         />
         <DollarSign
           className={`w-3 h-3 ${producao.pago ? 'text-green-600' : 'text-gray-300'}`}
-          title="Marcar como pago"
+          title="Pago"
         />
       </div>
     </div>

@@ -154,3 +154,55 @@ export type Etapa =
   | 'Produção'
   | 'Pronto'
   | 'Enviado';
+
+// --- Controlo de Qualidade / Modelista ---
+
+export interface TabelaMedidasModelista {
+  id: string;
+  producao_id: string;
+  nome_tabela: string;
+  data_registo: string;      // timestamp
+  observacoes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MedidaModelistaDetalhe {
+  id: string;
+  tabela_id: string;
+  cor: string;
+  tamanho: string;
+  letra_medida: string;
+  descricao_medida: string;
+  medida_pedida: number;   // cm
+  tolerancia: number;      // cm
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface QCRegisto {
+  id: string;
+  producao_id: string;
+  data_controlo: string;     // timestamp
+  cor_controlada: string;
+  tamanho_controlado: string;
+  responsavel?: string | null;
+  resultado_geral?: 'Aprovado' | 'Reprovado' | 'Parcial' | null;
+  observacoes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface QCMedida {
+  id: string;
+  registo_id: string;
+  letra_medida: string;
+  descricao_medida: string;
+  medida_pedida_modelista?: number | null;
+  tolerancia_modelista?: number | null;
+  medida_registada: number;
+  desvio?: number | null;           // calculado
+  passou_controlo?: boolean | null; // calculado
+  created_at?: string;
+  updated_at?: string;
+}

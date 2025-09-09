@@ -214,25 +214,36 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
               <p className="text-gray-600">{producao.marca} • {producao.cliente}</p>
             </div>
           </div>
-          <button
-            onClick={handlePrint}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            title="Imprimir resumo"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Imprimir</span>
-          </button>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePrint}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              title="Imprimir resumo"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Imprimir</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 print-content">
+          {/* Production Summary for Print */}
+          <div className="hidden print:block">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold">LOMARTEX</h1>
+              <p className="text-sm text-gray-600">Resumo de Produção</p>
+              <p className="text-xs text-gray-500">{new Date().toLocaleDateString('pt-PT')}</p>
+            </div>
+          </div>
+
           {/* Quick Action Flags */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-lg p-4 print:hidden">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Estado Rápido</h3>
             <div className="flex items-center space-x-4 flex-wrap gap-2">
               <div className="flex items-center space-x-2">
@@ -411,12 +422,12 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
           )}
 
           {/* Botão de Fechar */}
-          <div className="flex justify-end pt-4 border-t border-gray-200">
+          <div className="flex justify-end pt-4 border-t border-gray-200 print:hidden">
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Fechar
+              <X className="w-6 h-6" />
             </button>
           </div>
         </div>

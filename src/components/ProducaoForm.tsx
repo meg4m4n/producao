@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Save, Package, Plus, Trash2, Copy, Clock, Wrench } from 'lucide-react';
 import { Producao, Etapa, Estado } from '../types';
 import { etapas, estados } from '../data/mockData';
 import { useClientes } from '../hooks/useSupabaseData';
 import { useTiposPeca } from '../hooks/useTiposPeca';
 import { useLocaisProducao } from '../hooks/useLocaisProducao';
+import ModelistaMedidasSection from './modelista/ModelistaMedidasSection';
 
 interface ProducaoFormProps {
   isOpen: boolean;
@@ -21,19 +22,19 @@ interface TabelaItem {
 }
 
 const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, producao }) => {
-  const { clientes, loading: clientesLoading } = useClientes();
+  const { clientes } = useClientes();
   const { tiposPeca } = useTiposPeca();
   const { locaisProducao } = useLocaisProducao();
-  
+
   const variantesToTabela = (variantes: any[]): TabelaItem[] => {
     const items: TabelaItem[] = [];
-    variantes.forEach(variante => {
+    variantes.forEach((variante) => {
       Object.entries(variante.tamanhos).forEach(([tamanho, quantidade]) => {
         items.push({
           id: `${variante.cor}-${tamanho}`,
           cor: variante.cor,
           tamanho,
-          quantidade: quantidade as number
+          quantidade: quantidade as number,
         });
       });
     });
@@ -41,18 +42,16 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
   };
 
   const tabelaToVariantes = (tabela: TabelaItem[]) => {
-    const variantesMap = new Map();
-    
-    tabela.forEach(item => {
+    const variantesMap = new Map<string, { cor: string; tamanhos: Record<string, number> }>();
+    tabela.forEach((item) => {
       if (!variantesMap.has(item.cor)) {
         variantesMap.set(item.cor, { cor: item.cor, tamanhos: {} });
       }
       if (item.quantidade > 0) {
-        variantesMap.get(item.cor).tamanhos[item.tamanho] = item.quantidade;
+        variantesMap.get(item.cor)!.tamanhos[item.tamanho] = item.quantidade;
       }
     });
-    
-    return Array.from(variantesMap.values()).filter(v => Object.keys(v.tamanhos).length > 0);
+    return Array.from(variantesMap.values()).filter((v) => Object.keys(v.tamanhos).length > 0);
   };
 
   const [formData, setFormData] = useState({
@@ -79,14 +78,13 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
     localProducaoId: '',
     empresaExterna: '',
     linkOdoo: '',
-    comments: ''
+    comments: '',
   });
 
   const [tabelaItems, setTabelaItems] = useState<TabelaItem[]>([]);
   const [novaCor, setNovaCor] = useState('');
   const [novoTamanho, setNovoTamanho] = useState('');
 
-  // Preencher dados quando estiver a editar
   useEffect(() => {
     if (producao && isOpen) {
       setFormData({
@@ -113,15 +111,13 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
         localProducaoId: producao.localProducaoId || '',
         empresaExterna: producao.empresaExterna || '',
         linkOdoo: producao.linkOdoo || '',
-        comments: producao.comments || ''
+        comments: producao.comments || '',
       });
 
       setTabelaItems(variantesToTabela(producao.variantes || []));
     } else if (!producao && isOpen) {
-      // Reset form for new production
-      const nextOP = `OP-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
       setFormData({
-        codigoOP: nextOP,
+        codigoOP: '',
         marca: '',
         cliente: '',
         referenciaInterna: '',
@@ -144,109 +140,120 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
         localProducaoId: '',
         empresaExterna: '',
         linkOdoo: '',
-        comments: ''
+        comments: '',
       });
       setTabelaItems([]);
     }
   }, [producao, isOpen]);
 
-  const clienteSelecionado = clientes?.find(c => c.nome === formData.cliente);
+  const clienteSelecionado = clientes?.find((c) => c.nome === formData.cliente);
   const marcasDisponiveis = clienteSelecionado?.marcas || [];
-  const coresUnicas = Array.from(new Set(tabelaItems.map(item => item.cor))).filter(Boolean);
-  const tamanhosUnicos = Array.from(new Set(tabelaItems.map(item => item.tamanho))).filter(Boolean);
+  const coresUnicas = Array.from(new Set(tabelaItems.map((item) => item.cor))).filter(Boolean);
+  const tamanhosUnicos = Array.from(new Set(tabelaItems.map((item) => item.tamanho))).filter(Boolean);
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleClienteChange = (cliente: string) => {
-    setFormData(prev => ({ ...prev, cliente, marca: '' }));
+    setFormData((prev) => ({ ...prev, cliente, marca: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const variantes = tabelaToVariantes(tabelaItems);
-    const producaoData: any = { 
-      ...formData, 
+    const producaoData: any = {
+      ...formData,
       variantes,
-      estado: formData.faltaComponentes ? 'FALTA COMPONENTES' : formData.estado
+      estado: formData.faltaComponentes ? 'FALTA COMPONENTES' : formData.estado,
     };
-    
-    // Include ID if editing existing production
+
     if (producao?.id) {
       producaoData.id = producao.id;
     }
-    
+
     delete (producaoData as any).faltaComponentes;
     onSave(producaoData);
     onClose();
   };
 
-  // Funções de adicionar/remover/editar cores e tamanhos
+  // Cores/Tamanhos
   const adicionarCor = () => {
     if (!novaCor.trim() || coresUnicas.includes(novaCor.trim())) return;
     const cor = novaCor.trim();
-    const novosItems: TabelaItem[] = tamanhosUnicos.length > 0
-      ? tamanhosUnicos.map(tamanho => ({ id: `${cor}-${tamanho}`, cor, tamanho, quantidade: 0 }))
-      : ['XS', 'S', 'M', 'L', 'XL'].map(tamanho => ({ id: `${cor}-${tamanho}`, cor, tamanho, quantidade: 0 }));
-    setTabelaItems(prev => [...prev, ...novosItems]);
+    const novosItems: TabelaItem[] =
+      tamanhosUnicos.length > 0
+        ? tamanhosUnicos.map((tamanho) => ({ id: `${cor}-${tamanho}`, cor, tamanho, quantidade: 0 }))
+        : ['XS', 'S', 'M', 'L', 'XL'].map((tamanho) => ({ id: `${cor}-${tamanho}`, cor, tamanho, quantidade: 0 }));
+    setTabelaItems((prev) => [...prev, ...novosItems]);
     setNovaCor('');
   };
 
   const adicionarTamanho = () => {
-    if (!novoTamanho.trim() || tamanhosUnicos.includes(novoTamanho.trim().toUpperCase())) return;
-    const tamanho = novoTamanho.trim().toUpperCase();
-    const novosItems: TabelaItem[] = coresUnicas.length > 0
-      ? coresUnicas.map(cor => ({ id: `${cor}-${tamanho}`, cor, tamanho, quantidade: 0 }))
-      : [{ id: `Nova Cor-${tamanho}`, cor: 'Nova Cor', tamanho, quantidade: 0 }];
-    setTabelaItems(prev => [...prev, ...novosItems]);
+    const novo = novoTamanho.trim().toUpperCase();
+    if (!novo || tamanhosUnicos.includes(novo)) return;
+    const novosItems: TabelaItem[] =
+      coresUnicas.length > 0
+        ? coresUnicas.map((cor) => ({ id: `${cor}-${novo}`, cor, tamanho: novo, quantidade: 0 }))
+        : [{ id: `Nova Cor-${novo}`, cor: 'Nova Cor', tamanho: novo, quantidade: 0 }];
+    setTabelaItems((prev) => [...prev, ...novosItems]);
     setNovoTamanho('');
   };
 
   const removerCor = (cor: string) => {
     if (confirm(`Remover todas as entradas da cor "${cor}"?`)) {
-      setTabelaItems(prev => prev.filter(item => item.cor !== cor));
+      setTabelaItems((prev) => prev.filter((item) => item.cor !== cor));
     }
   };
 
   const removerTamanho = (tamanho: string) => {
     if (confirm(`Remover todas as entradas do tamanho "${tamanho}"?`)) {
-      setTabelaItems(prev => prev.filter(item => item.tamanho !== tamanho));
+      setTabelaItems((prev) => prev.filter((item) => item.tamanho !== tamanho));
     }
   };
 
-  const removerItem = (id: string) => setTabelaItems(prev => prev.filter(item => item.id !== id));
+  const removerItem = (id: string) => setTabelaItems((prev) => prev.filter((item) => item.id !== id));
 
   const duplicarLinha = (item: TabelaItem) => {
-    setTabelaItems(prev => [...prev, { ...item, id: `${item.cor}-${item.tamanho}-${Date.now()}` }]);
+    setTabelaItems((prev) => [...prev, { ...item, id: `${item.cor}-${item.tamanho}-${Date.now()}` }]);
   };
 
   const updateItem = (id: string, field: keyof TabelaItem, value: string | number) => {
-    setTabelaItems(prev => prev.map(item => 
-      item.id === id 
-        ? { 
-            ...item, 
-            [field]: value, 
-            id: field === 'cor' || field === 'tamanho' ? `${field === 'cor' ? value : item.cor}-${field === 'tamanho' ? value : item.tamanho}` : item.id 
-          } 
-        : item
-    ));
+    setTabelaItems((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              [field]: value,
+              id:
+                field === 'cor' || field === 'tamanho'
+                  ? `${field === 'cor' ? value : item.cor}-${field === 'tamanho' ? value : item.tamanho}`
+                  : item.id,
+            }
+          : item
+      )
+    );
   };
 
   const generateCodigoOP = () => {
     const year = new Date().getFullYear();
     const timestamp = Date.now().toString().slice(-4);
     const newOP = `OP-${year}-${timestamp}`;
-    setFormData(prev => ({ ...prev, codigoOP: newOP }));
+    setFormData((prev) => ({ ...prev, codigoOP: newOP }));
   };
+
   const adicionarLinha = () => {
-    setTabelaItems(prev => [...prev, { 
-      id: `nova-${Date.now()}`, 
-      cor: '', 
-      tamanho: '', 
-      quantidade: 0 
-    }]);
+    setTabelaItems((prev) => [...prev, { id: `nova-${Date.now()}`, cor: '', tamanho: '', quantidade: 0 }]);
   };
+
+  // -------- FIX: evitar avaliar `producao` quando não existe --------
+  const producaoForModelista = useMemo(() => {
+    if (!producao) return null;
+    return {
+      ...producao,
+      variantes: tabelaToVariantes(tabelaItems),
+    } as Producao;
+  }, [producao, tabelaItems]);
 
   if (!isOpen) return null;
 
@@ -257,14 +264,9 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <Package className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-gray-900">
-              {producao ? 'Editar Produção' : 'Nova Produção'}
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900">{producao ? 'Editar Produção' : 'Nova Produção'}</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -298,6 +300,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               </div>
             </div>
           </div>
+
           {/* Informações Básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Cliente */}
@@ -310,8 +313,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 required
               >
                 <option value="">Selecionar cliente</option>
-                {clientes.map(cliente => (
-                  <option key={cliente.id} value={cliente.nome}>{cliente.nome}</option>
+                {clientes.map((cliente) => (
+                  <option key={cliente.id} value={cliente.nome}>
+                    {cliente.nome}
+                  </option>
                 ))}
               </select>
             </div>
@@ -327,8 +332,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 disabled={!formData.cliente}
               >
                 <option value="">Selecionar marca</option>
-                {marcasDisponiveis.map(marca => (
-                  <option key={marca} value={marca}>{marca}</option>
+                {marcasDisponiveis.map((marca) => (
+                  <option key={marca} value={marca}>
+                    {marca}
+                  </option>
                 ))}
               </select>
             </div>
@@ -379,8 +386,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 required
               >
                 <option value="">Selecionar tipo de peça</option>
-                {tiposPeca.map(tipo => (
-                  <option key={tipo.id} value={tipo.nome}>{tipo.nome}</option>
+                {tiposPeca.map((tipo) => (
+                  <option key={tipo.id} value={tipo.nome}>
+                    {tipo.nome}
+                  </option>
                 ))}
               </select>
             </div>
@@ -407,8 +416,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 onChange={(e) => handleChange('etapa', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                {etapas.map(etapa => (
-                  <option key={etapa} value={etapa}>{etapa}</option>
+                {etapas.map((etapa) => (
+                  <option key={etapa} value={etapa}>
+                    {etapa}
+                  </option>
                 ))}
               </select>
             </div>
@@ -429,8 +440,10 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                {estados.map(estado => (
-                  <option key={estado} value={estado}>{estado}</option>
+                {estados.map((estado) => (
+                  <option key={estado} value={estado}>
+                    {estado}
+                  </option>
                 ))}
               </select>
             </div>
@@ -503,10 +516,11 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               </div>
             </div>
           </div>
+
           {/* Cores e Tamanhos */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Cores e Tamanhos</h3>
-            
+
             {/* Adicionar Nova Cor/Tamanho */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="flex space-x-2">
@@ -556,7 +570,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tabelaItems.map((item, index) => (
+                  {tabelaItems.map((item) => (
                     <tr key={item.id}>
                       <td className="px-4 py-3">
                         <input
@@ -613,7 +627,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                   ))}
                 </tbody>
               </table>
-              
+
               <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
                 <button
                   type="button"
@@ -626,14 +640,13 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               </div>
             </div>
 
-            {/* Resumo de Cores e Tamanhos */}
             {(coresUnicas.length > 0 || tamanhosUnicos.length > 0) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 {coresUnicas.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Cores Disponíveis</h4>
                     <div className="flex flex-wrap gap-2">
-                      {coresUnicas.map(cor => (
+                      {coresUnicas.map((cor) => (
                         <div key={cor} className="flex items-center space-x-2 bg-blue-50 px-2 py-1 rounded">
                           <span className="text-sm text-blue-800">{cor}</span>
                           <button
@@ -653,7 +666,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Tamanhos Disponíveis</h4>
                     <div className="flex flex-wrap gap-2">
-                      {tamanhosUnicos.map(tamanho => (
+                      {tamanhosUnicos.map((tamanho) => (
                         <div key={tamanho} className="flex items-center space-x-2 bg-green-50 px-2 py-1 rounded">
                           <span className="text-sm text-green-800">{tamanho}</span>
                           <button
@@ -684,7 +697,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                 <select
                   value={formData.localProducaoId}
                   onChange={(e) => {
-                    const selectedLocal = locaisProducao.find(l => l.id === e.target.value);
+                    const selectedLocal = locaisProducao.find((l) => l.id === e.target.value);
                     handleChange('localProducaoId', e.target.value);
                     if (selectedLocal) {
                       handleChange('localProducao', selectedLocal.tipo);
@@ -696,7 +709,7 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Selecionar local</option>
-                  {locaisProducao.map(local => (
+                  {locaisProducao.map((local) => (
                     <option key={local.id} value={local.id}>
                       {local.nome} ({local.tipo})
                     </option>
@@ -814,6 +827,17 @@ const ProducaoForm: React.FC<ProducaoFormProps> = ({ isOpen, onClose, onSave, pr
               </label>
             </div>
           </div>
+
+          {/* Zona da Modelista */}
+          {producaoForModelista ? (
+            <ModelistaMedidasSection producao={producaoForModelista} />
+          ) : (
+            <div className="mt-6 border-t border-gray-200 pt-4">
+              <div className="p-3 rounded bg-yellow-50 text-yellow-800 text-sm">
+                Para usar a Tabela de Medidas da Modelista, primeiro <b>guarda</b> a produção.
+              </div>
+            </div>
+          )}
 
           {/* Botões */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

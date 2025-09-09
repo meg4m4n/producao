@@ -43,7 +43,6 @@ const ProducaoInfo: React.FC<ProducaoInfoProps> = ({
         </div>
       </div>
 
-      {/* Production Times */}
       {(producao.tempoProducaoEstimado > 0 || producao.tempoProducaoReal > 0) && (
         <div className="grid grid-cols-2 gap-1">
           <div>
@@ -57,7 +56,6 @@ const ProducaoInfo: React.FC<ProducaoInfoProps> = ({
         </div>
       )}
 
-      {/* Mold Status */}
       {producao.temMolde && (
         <div className="flex items-center space-x-1">
           <span className="inline-flex px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
@@ -65,6 +63,7 @@ const ProducaoInfo: React.FC<ProducaoInfoProps> = ({
           </span>
         </div>
       )}
+
       <div className="flex items-center space-x-1 pt-1">
         {producao.localProducao === 'Interno' ? (
           <Building className="w-3 h-3 text-blue-600" />
