@@ -621,7 +621,7 @@ export const upsertQCControloAdicional = async (
 
 export const getQCComentarios = async (registoId: string): Promise<QCComentario[]> => {
   const { data, error } = await supabase
-    .from('qc_comentarios')
+    .from('controlo_qualidade_comentarios')
     .select('*')
     .eq('registo_id', registoId)
     .order('created_at', { ascending: true });
@@ -633,7 +633,7 @@ export const createQCComentario = async (
   payload: Omit<QCComentario, 'id' | 'created_at' | 'updated_at'>
 ): Promise<QCComentario> => {
   const { data, error } = await supabase
-    .from('qc_comentarios')
+    .from('controlo_qualidade_comentarios')
     .insert(payload)
     .select('*')
     .single();
@@ -646,7 +646,7 @@ export const updateQCComentario = async (
   comentario: string
 ): Promise<QCComentario> => {
   const { data, error } = await supabase
-    .from('qc_comentarios')
+    .from('controlo_qualidade_comentarios')
     .update({ comentario })
     .eq('id', id)
     .select('*')
@@ -656,6 +656,6 @@ export const updateQCComentario = async (
 };
 
 export const deleteQCComentario = async (id: string): Promise<void> => {
-  const { error } = await supabase.from('qc_comentarios').delete().eq('id', id);
+  const { error } = await supabase.from('controlo_qualidade_comentarios').delete().eq('id', id);
   if (error) throw error;
 };
