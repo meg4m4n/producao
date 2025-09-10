@@ -206,3 +206,27 @@ export interface QCMedida {
   created_at?: string;
   updated_at?: string;
 }
+
+// Novos tipos para controlo de qualidade expandido
+export interface QCControloAdicional {
+  id: string;
+  registo_id: string;
+  linhas: boolean;
+  borboto: boolean;
+  sujidade: boolean;
+  defeito_transfer: boolean;
+  peca_torta: boolean;
+  problemas_ferro: boolean;
+  outros_controlos?: string; // JSON para controlos adicionais
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface QCComentario {
+  id: string;
+  registo_id: string;
+  comentario: string;
+  usuario: string;
+  created_at: string;
+  updated_at?: string;
+}

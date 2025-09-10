@@ -360,6 +360,91 @@ export interface Database {
           }
         ]
       }
+      controlo_qualidade_adicional: {
+        Row: {
+          id: string
+          registo_id: string
+          linhas: boolean
+          borboto: boolean
+          sujidade: boolean
+          defeito_transfer: boolean
+          peca_torta: boolean
+          problemas_ferro: boolean
+          outros_controlos: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          registo_id: string
+          linhas?: boolean
+          borboto?: boolean
+          sujidade?: boolean
+          defeito_transfer?: boolean
+          peca_torta?: boolean
+          problemas_ferro?: boolean
+          outros_controlos?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          registo_id?: string
+          linhas?: boolean
+          borboto?: boolean
+          sujidade?: boolean
+          defeito_transfer?: boolean
+          peca_torta?: boolean
+          problemas_ferro?: boolean
+          outros_controlos?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controlo_qualidade_adicional_registo_id_fkey"
+            columns: ["registo_id"]
+            isOneToOne: false
+            referencedRelation: "controlo_qualidade_registos"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      controlo_qualidade_comentarios: {
+        Row: {
+          id: string
+          registo_id: string
+          comentario: string
+          usuario: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          registo_id: string
+          comentario: string
+          usuario?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          registo_id?: string
+          comentario?: string
+          usuario?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controlo_qualidade_comentarios_registo_id_fkey"
+            columns: ["registo_id"]
+            isOneToOne: false
+            referencedRelation: "controlo_qualidade_registos"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

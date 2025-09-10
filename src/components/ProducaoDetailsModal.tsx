@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Package, ExternalLink, Building, MapPin, AlertTriangle, Clock, Printer, Edit, Save } from 'lucide-react';
+import { X, Package, ExternalLink, Building, MapPin, AlertTriangle, Clock, Printer, Edit, Save, MessageSquare } from 'lucide-react';
 import { Producao } from '../types';
 
 interface ProducaoDetailsModalProps {
@@ -430,55 +430,62 @@ const ProducaoDetailsModal: React.FC<ProducaoDetailsModalProps> = ({
           </div>
 
           {/* Comentários para Impressão */}
-          {producao.comments && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Comentários</h3>
-                {!editingComments && onUpdateComments && (
-                  <button
-                    onClick={() => setEditingComments(true)}
-                    className="flex items-center space-x-1 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors print:hidden"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span>Editar</span>
-                  </button>
-                )}
               </div>
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                {editingComments ? (
-                  <div className="space-y-3">
-                    <textarea
-                      value={commentsText}
-                      onChange={(e) => setCommentsText(e.target.value)}
-                      rows={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      placeholder="Adicione comentários sobre a produção..."
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingComments(false);
-                          setCommentsText(producao.comments || '');
-                        }}
-                        className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleSaveComments}
-                        className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                      >
-                        <Save className="w-3 h-3" />
-                        <span>Guardar</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{producao.comments}</p>
-                )}
-              </div>
+              {!editingComments && onUpdateComments && (
+                <button
+                  onClick={() => setEditingComments(true)}
+                  className="flex items-center space-x-1 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors print:hidden"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Editar</span>
+                </button>
+              )}
             </div>
-          )}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {editingComments ? (
+                <div className="space-y-3">
+                  <textarea
+                    value={commentsText}
+                    onChange={(e) => setCommentsText(e.target.value)}
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    placeholder="Adicione comentários sobre a produção para impressão..."
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => {
+                        setEditingComments(false);
+                        setCommentsText(producao.comments || '');
+                      }}
+                      className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSaveComments}
+                      className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                      <Save className="w-3 h-3" />
+                      <span>Guardar</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {producao.comments ? (
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{producao.comments}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Sem comentários. Clique em "Editar" para adicionar.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Botão de Fechar */}
           <div className="flex justify-end pt-4 border-t border-gray-200 print:hidden">

@@ -3,11 +3,12 @@ import {
   Producao,
   Cliente,
   BOMFile,
-  // novos tipos
   TabelaMedidasModelista,
   MedidaModelistaDetalhe,
   QCRegisto,
   QCMedida,
+  QCControloAdicional,
+  QCComentario,
 } from '../types';
 
 /* ----------------------------- TRANSFORM HELPERS ---------------------------- */
@@ -226,22 +227,22 @@ export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Pr
         data_final: (producao as any).dataFinal || (producao as any).dataEstimadaEntrega || null,
         em_producao: producao.emProducao,
         problemas: producao.problemas,
-        local_producao: producao.localProducao,
+        local_producao: producao.local_producao,
         local_producao_id: (producao as any).localProducaoId && (producao as any).localProducaoId.trim() !== '' ? (producao as any).localProducaoId : null,
         empresa_externa: producao.empresaExterna,
         link_odoo: producao.linkOdoo,
         comments: producao.comments,
         // financeiro
         pago: producao.pago,
-        pago_parcial: producao.pagoParcial,
+        pago_parcial: producao.pago_parcial,
         pagamentos: producao.pagamentos,
         valor_pago: producao.valorPago,
         valor_restante: producao.valorRestante,
         fastprod: producao.fastprod,
         observacoes_financeiras: producao.observacoesFinanceiras,
-        numero_fatura: producao.numeroFatura,
-        data_fatura: producao.dataFatura,
-        valor_fatura: producao.valorFatura,
+        numero_fatura: producao.numero_fatura,
+        data_fatura: producao.data_fatura,
+        valor_fatura: producao.valor_fatura,
       })
       .select('*')
       .single();
@@ -282,7 +283,6 @@ export const createProducao = async (producao: Omit<Producao, 'id'>): Promise<Pr
 
 export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>): Promise<Producao> => {
   try {
-    // Validate ID parameter
     if (!id || id.trim() === '') {
       throw new Error('Invalid production ID: ID cannot be empty');
     }
@@ -298,11 +298,9 @@ export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>)
     }
     const marca = marcas[0];
 
-    // UPDATE sem tocar no codigo_op
     const { error: producaoError } = await supabase
       .from('producoes')
       .update({
-        // codigo_op: (NÃO enviar)
         marca_id: marca.id,
         cliente_id: marca.cliente_id,
         referencia_interna: producao.referenciaInterna,
@@ -317,27 +315,26 @@ export const updateProducao = async (id: string, producao: Omit<Producao, 'id'>)
         data_final: (producao as any).dataFinal || (producao as any).dataEstimadaEntrega || null,
         em_producao: producao.emProducao,
         problemas: producao.problemas,
-        local_producao: producao.localProducao,
+        local_producao: producao.local_producao,
         local_producao_id: (producao as any).localProducaoId && (producao as any).localProducaoId.trim() !== '' ? (producao as any).localProducaoId : null,
         empresa_externa: producao.empresaExterna,
         link_odoo: producao.linkOdoo,
         comments: producao.comments,
         // financeiro
         pago: producao.pago,
-        pago_parcial: producao.pagoParcial,
+        pago_parcial: producao.pago_parcial,
         pagamentos: producao.pagamentos,
         valor_pago: producao.valorPago,
         valor_restante: producao.valorRestante,
         fastprod: producao.fastprod,
         observacoes_financeiras: producao.observacoesFinanceiras,
-        numero_fatura: producao.numeroFatura,
-        data_fatura: producao.dataFatura,
-        valor_fatura: producao.valorFatura,
+        numero_fatura: producao.numero_fatura,
+        data_fatura: producao.data_fatura,
+        valor_fatura: producao.valor_fatura,
       })
       .eq('id', id);
     if (producaoError) throw producaoError;
 
-    // Variantes: apaga e recria
     const { error: deleteVariantesError } = await supabase.from('producao_variantes').delete().eq('producao_id', id);
     if (deleteVariantesError) throw deleteVariantesError;
 
@@ -440,7 +437,7 @@ export const createBOMFiles = async (producaoId: string, files: Omit<BOMFile, 'i
   try {
     const bomData = files.map((file) => ({
       producao_id: producaoId,
-      nome: file.name,
+      nome: file.nome,
       url: file.url,
       upload_date: file.uploadDate,
     }));
@@ -470,22 +467,8 @@ export const deleteBOMFile = async (id: string): Promise<void> => {
   }
 };
 
-/* ------------------------------- MARCAS / AUX ------------------------------- */
+/* -------------------------- TABELAS MODELISTA ------------------------------- */
 
-export const getMarcasByCliente = async (clienteNome: string): Promise<string[]> => {
-  try {
-    const { data, error } = await supabase.from('marcas').select('nome, clientes!inner(nome)').eq('clientes.nome', clienteNome);
-    if (error) throw error;
-    return data.map((marca) => marca.nome);
-  } catch (error) {
-    console.error('Error fetching marcas by cliente:', error);
-    return [];
-  }
-};
-
-/* ====================== MODELISTA: TABELAS + DETALHES ====================== */
-
-// Listar tabelas da modelista por produção
 export const getTabelasMedidasModelista = async (producaoId: string): Promise<TabelaMedidasModelista[]> => {
   const { data, error } = await supabase
     .from('tabelas_medidas_modelista')
@@ -493,32 +476,28 @@ export const getTabelasMedidasModelista = async (producaoId: string): Promise<Ta
     .eq('producao_id', producaoId)
     .order('data_registo', { ascending: false });
   if (error) throw error;
-  return data as TabelaMedidasModelista[];
+  return (data ?? []) as TabelaMedidasModelista[];
 };
 
-export const createTabelaMedidasModelista = async (payload: Omit<TabelaMedidasModelista, 'id' | 'created_at' | 'updated_at'>) => {
+export const createTabelaMedidasModelista = async (
+  payload: Omit<TabelaMedidasModelista, 'id' | 'created_at' | 'updated_at'>
+): Promise<TabelaMedidasModelista> => {
   const { data, error } = await supabase
     .from('tabelas_medidas_modelista')
-    .insert({
-      producao_id: payload.producao_id,
-      nome_tabela: payload.nome_tabela,
-      data_registo: payload.data_registo,
-      observacoes: payload.observacoes ?? null
-    })
+    .insert(payload)
     .select('*')
     .single();
   if (error) throw error;
   return data as TabelaMedidasModelista;
 };
 
-export const updateTabelaMedidasModelista = async (id: string, patch: Partial<TabelaMedidasModelista>) => {
+export const updateTabelaMedidasModelista = async (
+  id: string,
+  payload: Partial<TabelaMedidasModelista>
+): Promise<TabelaMedidasModelista> => {
   const { data, error } = await supabase
     .from('tabelas_medidas_modelista')
-    .update({
-      nome_tabela: patch.nome_tabela,
-      data_registo: patch.data_registo,
-      observacoes: patch.observacoes ?? null
-    })
+    .update(payload)
     .eq('id', id)
     .select('*')
     .single();
@@ -526,15 +505,11 @@ export const updateTabelaMedidasModelista = async (id: string, patch: Partial<Ta
   return data as TabelaMedidasModelista;
 };
 
-export const deleteTabelaMedidasModelista = async (id: string) => {
-  const { error } = await supabase
-    .from('tabelas_medidas_modelista')
-    .delete()
-    .eq('id', id);
+export const deleteTabelaMedidasModelista = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('tabelas_medidas_modelista').delete().eq('id', id);
   if (error) throw error;
 };
 
-// Detalhes (linhas) de uma tabela
 export const getMedidasModelistaDetalhes = async (tabelaId: string): Promise<MedidaModelistaDetalhe[]> => {
   const { data, error } = await supabase
     .from('medidas_modelista_detalhes')
@@ -542,45 +517,50 @@ export const getMedidasModelistaDetalhes = async (tabelaId: string): Promise<Med
     .eq('tabela_id', tabelaId)
     .order('letra_medida', { ascending: true });
   if (error) throw error;
-  return data as MedidaModelistaDetalhe[];
+  return (data ?? []) as MedidaModelistaDetalhe[];
 };
 
-export const upsertMedidasModelistaDetalhes = async (rows: Omit<MedidaModelistaDetalhe, 'id' | 'created_at' | 'updated_at'>[]) => {
-  if (!rows.length) return [];
+export const upsertMedidasModelistaDetalhes = async (
+  payload: Omit<MedidaModelistaDetalhe, 'id' | 'created_at' | 'updated_at'>[]
+): Promise<MedidaModelistaDetalhe[]> => {
+  // ⚠️ Removido o onConflict porque a tabela não tem UNIQUE/PK nestas colunas
   const { data, error } = await supabase
     .from('medidas_modelista_detalhes')
-    .insert(rows) // simples: insert em massa
+    .insert(payload)
     .select('*');
   if (error) throw error;
-  return data as MedidaModelistaDetalhe[];
+  return (data ?? []) as MedidaModelistaDetalhe[];
 };
 
-// Obter especificação (linhas) para uma produção + cor + tamanho (independente da tabela)
-export const getModelistaSpecFor = async (producaoId: string, cor: string, tamanho: string): Promise<MedidaModelistaDetalhe[]> => {
-  // tabela mais recente para a produção
-  const { data: tabelas, error: tabErr } = await supabase
-    .from('tabelas_medidas_modelista')
-    .select('*')
-    .eq('producao_id', producaoId)
-    .order('data_registo', { ascending: false })
-    .limit(1);
-  if (tabErr) throw tabErr;
-  if (!tabelas || tabelas.length === 0) return [];
+/* -------------------------- CONTROLO QUALIDADE ------------------------------ */
 
-  const tabela = tabelas[0];
-  const { data: detalhes, error: detErr } = await supabase
+export const getModelistaSpecFor = async (
+  producaoId: string,
+  cor: string,
+  tamanho: string
+): Promise<MedidaModelistaDetalhe[]> => {
+  const { data, error } = await supabase
     .from('medidas_modelista_detalhes')
     .select('*')
-    .eq('tabela_id', tabela.id)
+    .eq('tabela_id', producaoId)
     .eq('cor', cor)
     .eq('tamanho', tamanho)
     .order('letra_medida', { ascending: true });
-
-  if (detErr) throw detErr;
-  return (detalhes ?? []) as MedidaModelistaDetalhe[];
+  if (error) throw error;
+  return (data ?? []) as MedidaModelistaDetalhe[];
 };
 
-/* =========================== CONTROLO DE QUALIDADE ========================= */
+export const createQCRegisto = async (
+  payload: Omit<QCRegisto, 'id' | 'created_at' | 'updated_at'>
+): Promise<QCRegisto> => {
+  const { data, error } = await supabase
+    .from('controlo_qualidade_registos')
+    .insert(payload)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as QCRegisto;
+};
 
 export const getQCRegistosByProducao = async (producaoId: string): Promise<QCRegisto[]> => {
   const { data, error } = await supabase
@@ -589,7 +569,18 @@ export const getQCRegistosByProducao = async (producaoId: string): Promise<QCReg
     .eq('producao_id', producaoId)
     .order('data_controlo', { ascending: false });
   if (error) throw error;
-  return data as QCRegisto[];
+  return (data ?? []) as QCRegisto[];
+};
+
+export const insertQCMedidas = async (
+  payload: Omit<QCMedida, 'id' | 'created_at' | 'updated_at'>[]
+): Promise<QCMedida[]> => {
+  const { data, error } = await supabase
+    .from('controlo_qualidade_medidas')
+    .insert(payload)
+    .select('*');
+  if (error) throw error;
+  return (data ?? []) as QCMedida[];
 };
 
 export const getQCMedidasByRegisto = async (registoId: string): Promise<QCMedida[]> => {
@@ -599,44 +590,72 @@ export const getQCMedidasByRegisto = async (registoId: string): Promise<QCMedida
     .eq('registo_id', registoId)
     .order('letra_medida', { ascending: true });
   if (error) throw error;
-  return data as QCMedida[];
+  return (data ?? []) as QCMedida[];
 };
 
-export const createQCRegisto = async (payload: Omit<QCRegisto, 'id' | 'created_at' | 'updated_at'>): Promise<QCRegisto> => {
+/* ----------------------- CONTROLOS ADICIONAIS QC ----------------------------- */
+
+export const getQCControloAdicional = async (registoId: string): Promise<QCControloAdicional | null> => {
   const { data, error } = await supabase
-    .from('controlo_qualidade_registos')
-    .insert({
-      producao_id: payload.producao_id,
-      data_controlo: payload.data_controlo ?? new Date().toISOString(),
-      cor_controlada: payload.cor_controlada,
-      tamanho_controlado: payload.tamanho_controlado,
-      responsavel: payload.responsavel ?? null,
-      resultado_geral: payload.resultado_geral ?? null,
-      observacoes: payload.observacoes ?? null
-    })
+    .from('controlo_qualidade_adicional')
+    .select('*')
+    .eq('registo_id', registoId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as QCControloAdicional | null;
+};
+
+export const upsertQCControloAdicional = async (
+  payload: Omit<QCControloAdicional, 'id' | 'created_at' | 'updated_at'>
+): Promise<QCControloAdicional> => {
+  const { data, error } = await supabase
+    .from('controlo_qualidade_adicional')
+    .insert(payload)
     .select('*')
     .single();
   if (error) throw error;
-  return data as QCRegisto;
+  return data as QCControloAdicional;
 };
 
-export const insertQCMedidas = async (rows: Omit<QCMedida, 'id' | 'created_at' | 'updated_at'>[]): Promise<QCMedida[]> => {
-  if (!rows.length) return [];
-  const payload = rows.map(r => {
-    const hasPedida = r.medida_pedida_modelista !== undefined && r.medida_pedida_modelista !== null;
-    const hasTol = r.tolerancia_modelista !== undefined && r.tolerancia_modelista !== null;
-    const desvio = hasPedida ? (r.medida_registada - (r.medida_pedida_modelista as number)) : null;
-    const passou = hasPedida && hasTol && desvio !== null
-      ? Math.abs(desvio as number) <= (r.tolerancia_modelista as number)
-      : null;
-    return { ...r, desvio, passou_controlo: passou };
-  });
+/* ----------------------------- COMENTÁRIOS QC ------------------------------- */
 
+export const getQCComentarios = async (registoId: string): Promise<QCComentario[]> => {
   const { data, error } = await supabase
-    .from('controlo_qualidade_medidas')
-    .insert(payload)
-    .select('*');
-
+    .from('qc_comentarios')
+    .select('*')
+    .eq('registo_id', registoId)
+    .order('created_at', { ascending: true });
   if (error) throw error;
-  return data as QCMedida[];
+  return (data ?? []) as QCComentario[];
+};
+
+export const createQCComentario = async (
+  payload: Omit<QCComentario, 'id' | 'created_at' | 'updated_at'>
+): Promise<QCComentario> => {
+  const { data, error } = await supabase
+    .from('qc_comentarios')
+    .insert(payload)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as QCComentario;
+};
+
+export const updateQCComentario = async (
+  id: string,
+  comentario: string
+): Promise<QCComentario> => {
+  const { data, error } = await supabase
+    .from('qc_comentarios')
+    .update({ comentario })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as QCComentario;
+};
+
+export const deleteQCComentario = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('qc_comentarios').delete().eq('id', id);
+  if (error) throw error;
 };
