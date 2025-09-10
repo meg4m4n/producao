@@ -424,7 +424,7 @@ const GanttChart: React.FC = () => {
                     {/* Min (Est.) */}
                     <div className="flex items-center px-2">
                       <div className="text-right w-full leading-tight">
-                        <div className="font-semibold text-gray-900">{producao.tempoProducaoEstimado || 0}</div>
+                        <div className="font-semibold text-gray-900">{(p as any).tempoProducaoEstimado || 0}</div>
                         <div className="text-gray-500 text-[10px]">min</div>
                       </div>
                     </div>
