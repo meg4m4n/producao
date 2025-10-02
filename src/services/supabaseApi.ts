@@ -659,3 +659,210 @@ export const deleteQCComentario = async (id: string): Promise<void> => {
   const { error } = await supabase.from('controlo_qualidade_comentarios').delete().eq('id', id);
   if (error) throw error;
 };
+
+/* --------------------------------- ENVIOS ---------------------------------- */
+
+export interface Envio {
+  id: string;
+  cliente_id: string | null;
+  cliente_nome?: string;
+  descricao: string;
+  responsavel: string;
+  pedido_por: 'cliente' | 'lomartex';
+  pago_por: 'cliente' | 'lomartex';
+  transportadora: string;
+  tracking: string;
+  valor_custo: number;
+  valor_cobrar: number;
+  carta_porte_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getEnvios = async (): Promise<Envio[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('envios')
+      .select(`
+        *,
+        clientes:cliente_id(nome)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((envio: any) => ({
+      id: envio.id,
+      cliente_id: envio.cliente_id,
+      cliente_nome: envio.clientes?.nome || '',
+      descricao: envio.descricao,
+      responsavel: envio.responsavel,
+      pedido_por: envio.pedido_por,
+      pago_por: envio.pago_por,
+      transportadora: envio.transportadora,
+      tracking: envio.tracking,
+      valor_custo: parseFloat(envio.valor_custo || 0),
+      valor_cobrar: parseFloat(envio.valor_cobrar || 0),
+      carta_porte_url: envio.carta_porte_url,
+      created_at: envio.created_at,
+      updated_at: envio.updated_at,
+    }));
+  } catch (error) {
+    console.error('Error fetching envios:', error);
+    return [];
+  }
+};
+
+export const getEnvioById = async (id: string): Promise<Envio | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('envios')
+      .select(`
+        *,
+        clientes:cliente_id(nome)
+      `)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      cliente_id: data.cliente_id,
+      cliente_nome: data.clientes?.nome || '',
+      descricao: data.descricao,
+      responsavel: data.responsavel,
+      pedido_por: data.pedido_por,
+      pago_por: data.pago_por,
+      transportadora: data.transportadora,
+      tracking: data.tracking,
+      valor_custo: parseFloat(data.valor_custo || 0),
+      valor_cobrar: parseFloat(data.valor_cobrar || 0),
+      carta_porte_url: data.carta_porte_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
+  } catch (error) {
+    console.error('Error fetching envio:', error);
+    return null;
+  }
+};
+
+export const createEnvio = async (envio: Omit<Envio, 'id' | 'created_at' | 'updated_at' | 'cliente_nome'>): Promise<Envio> => {
+  try {
+    const { data, error } = await supabase
+      .from('envios')
+      .insert({
+        cliente_id: envio.cliente_id,
+        descricao: envio.descricao,
+        responsavel: envio.responsavel,
+        pedido_por: envio.pedido_por,
+        pago_por: envio.pago_por,
+        transportadora: envio.transportadora,
+        tracking: envio.tracking,
+        valor_custo: envio.valor_custo,
+        valor_cobrar: envio.valor_cobrar,
+        carta_porte_url: envio.carta_porte_url,
+      })
+      .select(`
+        *,
+        clientes:cliente_id(nome)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      cliente_id: data.cliente_id,
+      cliente_nome: data.clientes?.nome || '',
+      descricao: data.descricao,
+      responsavel: data.responsavel,
+      pedido_por: data.pedido_por,
+      pago_por: data.pago_por,
+      transportadora: data.transportadora,
+      tracking: data.tracking,
+      valor_custo: parseFloat(data.valor_custo || 0),
+      valor_cobrar: parseFloat(data.valor_cobrar || 0),
+      carta_porte_url: data.carta_porte_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
+  } catch (error) {
+    console.error('Error creating envio:', error);
+    throw error;
+  }
+};
+
+export const updateEnvio = async (id: string, envio: Partial<Omit<Envio, 'id' | 'created_at' | 'updated_at' | 'cliente_nome'>>): Promise<Envio> => {
+  try {
+    const { data, error } = await supabase
+      .from('envios')
+      .update(envio)
+      .eq('id', id)
+      .select(`
+        *,
+        clientes:cliente_id(nome)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      cliente_id: data.cliente_id,
+      cliente_nome: data.clientes?.nome || '',
+      descricao: data.descricao,
+      responsavel: data.responsavel,
+      pedido_por: data.pedido_por,
+      pago_por: data.pago_por,
+      transportadora: data.transportadora,
+      tracking: data.tracking,
+      valor_custo: parseFloat(data.valor_custo || 0),
+      valor_cobrar: parseFloat(data.valor_cobrar || 0),
+      carta_porte_url: data.carta_porte_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
+  } catch (error) {
+    console.error('Error updating envio:', error);
+    throw error;
+  }
+};
+
+export const deleteEnvio = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase.from('envios').delete().eq('id', id);
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting envio:', error);
+    throw error;
+  }
+};
+
+export const uploadCartaPorte = async (file: File, envioId: string): Promise<string> => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${envioId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('cartas_porte')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('cartas_porte')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Error uploading carta de porte:', error);
+    throw error;
+  }
+};

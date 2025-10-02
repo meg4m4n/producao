@@ -12,8 +12,7 @@ export type Estado =
   | 'Embalamento'
   | 'Pronto';
 
-export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade';
-export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade' | 'financeiro' | 'users';
+export type PageType = 'producoes' | 'registos' | 'preparar-componentes' | 'gantt' | 'historico' | 'apps-lomartex' | 'controlo-qualidade' | 'financeiro' | 'users' | 'envios';
 
 export interface TipoPeca {
   id: string;

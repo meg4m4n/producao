@@ -1,5 +1,5 @@
 import React from 'react';
-import { Factory, FileText, Menu, X, Package2, Calendar, Archive, Grid3X3, Shield, DollarSign, LogOut, User2 } from 'lucide-react';
+import { Factory, FileText, Menu, X, Package2, Calendar, Archive, Grid3x3 as Grid3X3, Shield, DollarSign, LogOut, User as User2, Truck } from 'lucide-react';
 import { Users } from 'lucide-react';
 import { PageType } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentPage, onPage
     { id: 'apps-lomartex' as PageType, label: 'Apps Lomartex', icon: Grid3X3, description: 'Ferramentas auxiliares' },
     { id: 'controlo-qualidade' as PageType, label: 'Controlo de Qualidade', icon: Shield, description: 'Gestão de qualidade' },
     { id: 'financeiro' as PageType, label: 'Financeiro', icon: DollarSign, description: 'Gestão financeira' },
+    { id: 'envios' as PageType, label: 'Envios', icon: Truck, description: 'Gestão de envios' },
     { id: 'users' as PageType, label: 'Utilizadores', icon: Users, description: 'Gestão de utilizadores' },
   ];
 

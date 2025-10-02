@@ -11,6 +11,7 @@ import Historico from './pages/Historico';
 import AppsLomartex from './pages/AppsLomartex';
 import ControloQualidade from './pages/ControloQualidade';
 import Financeiro from './pages/Financeiro';
+import Envios from './pages/Envios';
 import Users from './pages/Users';
 import { PageType } from './types';
 
@@ -81,6 +82,12 @@ const AppContent: React.FC = () => {
         return (
           <ProtectedRoute page="financeiro">
             <Financeiro />
+          </ProtectedRoute>
+        );
+      case 'envios':
+        return (
+          <ProtectedRoute page="envios">
+            <Envios />
           </ProtectedRoute>
         );
       case 'users':
