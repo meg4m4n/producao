@@ -675,6 +675,8 @@ export interface Envio {
   valor_custo: number;
   valor_cobrar: number;
   carta_porte_url: string | null;
+  pago: boolean;
+  pago_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -704,6 +706,8 @@ export const getEnvios = async (): Promise<Envio[]> => {
       valor_custo: parseFloat(envio.valor_custo || 0),
       valor_cobrar: parseFloat(envio.valor_cobrar || 0),
       carta_porte_url: envio.carta_porte_url,
+      pago: envio.pago || false,
+      pago_at: envio.pago_at || null,
       created_at: envio.created_at,
       updated_at: envio.updated_at,
     }));
@@ -740,6 +744,8 @@ export const getEnvioById = async (id: string): Promise<Envio | null> => {
       valor_custo: parseFloat(data.valor_custo || 0),
       valor_cobrar: parseFloat(data.valor_cobrar || 0),
       carta_porte_url: data.carta_porte_url,
+      pago: data.pago || false,
+      pago_at: data.pago_at || null,
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
@@ -749,7 +755,7 @@ export const getEnvioById = async (id: string): Promise<Envio | null> => {
   }
 };
 
-export const createEnvio = async (envio: Omit<Envio, 'id' | 'created_at' | 'updated_at' | 'cliente_nome'>): Promise<Envio> => {
+export const createEnvio = async (envio: Omit<Envio, 'id' | 'created_at' | 'updated_at' | 'cliente_nome' | 'pago' | 'pago_at'>): Promise<Envio> => {
   try {
     const { data, error } = await supabase
       .from('envios')
@@ -786,6 +792,8 @@ export const createEnvio = async (envio: Omit<Envio, 'id' | 'created_at' | 'upda
       valor_custo: parseFloat(data.valor_custo || 0),
       valor_cobrar: parseFloat(data.valor_cobrar || 0),
       carta_porte_url: data.carta_porte_url,
+      pago: data.pago || false,
+      pago_at: data.pago_at || null,
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
@@ -822,6 +830,8 @@ export const updateEnvio = async (id: string, envio: Partial<Omit<Envio, 'id' | 
       valor_custo: parseFloat(data.valor_custo || 0),
       valor_cobrar: parseFloat(data.valor_cobrar || 0),
       carta_porte_url: data.carta_porte_url,
+      pago: data.pago || false,
+      pago_at: data.pago_at || null,
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
@@ -863,6 +873,27 @@ export const uploadCartaPorte = async (file: File, envioId: string): Promise<str
     return urlData.publicUrl;
   } catch (error) {
     console.error('Error uploading carta de porte:', error);
+    throw error;
+  }
+};
+
+export const updateEnvioPago = async (id: string, pago: boolean): Promise<void> => {
+  try {
+    const updateData: any = { pago };
+    if (pago) {
+      updateData.pago_at = new Date().toISOString();
+    } else {
+      updateData.pago_at = null;
+    }
+
+    const { error } = await supabase
+      .from('envios')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating envio pago status:', error);
     throw error;
   }
 };

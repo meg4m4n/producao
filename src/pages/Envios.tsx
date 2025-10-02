@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ExternalLink, Package, Calendar, Euro } from 'lucide-react';
+import { Plus, ExternalLink, Package, Calendar, Euro, Archive } from 'lucide-react';
 import {
   getEnvios,
   createEnvio,
   uploadCartaPorte,
+  updateEnvioPago,
   Envio,
 } from '../services/supabaseApi';
 import EnvioForm, { EnvioFormData } from '../components/EnvioForm';
@@ -13,6 +14,7 @@ export default function Envios() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showHistorico, setShowHistorico] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -77,10 +79,24 @@ export default function Envios() {
     return `${value.toFixed(2)}€`;
   };
 
-  const totalPages = Math.ceil(envios.length / itemsPerPage);
+  const handleTogglePago = async (envioId: string, currentPago: boolean) => {
+    try {
+      await updateEnvioPago(envioId, !currentPago);
+      await loadEnvios();
+    } catch (error) {
+      console.error('Erro ao atualizar estado de pagamento:', error);
+      alert('Erro ao atualizar estado de pagamento');
+    }
+  };
+
+  const enviosAtivos = envios.filter(e => !e.pago);
+  const enviosPagos = envios.filter(e => e.pago);
+
+  const displayEnvios = showHistorico ? enviosPagos : enviosAtivos;
+  const totalPages = Math.ceil(displayEnvios.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentEnvios = envios.slice(startIndex, endIndex);
+  const currentEnvios = displayEnvios.slice(startIndex, endIndex);
 
   if (loading) {
     return (
@@ -97,13 +113,29 @@ export default function Envios() {
           <h1 className="text-2xl font-bold text-gray-900">Envios</h1>
           <p className="text-gray-600 mt-1">Gestão de envios e transportadoras</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          Novo Envio
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShowHistorico(!showHistorico);
+              setCurrentPage(1);
+            }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              showHistorico
+                ? 'bg-gray-600 text-white hover:bg-gray-700'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            <Archive size={20} />
+            {showHistorico ? 'Ver Ativos' : 'Ver Histórico'}
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={20} />
+            Novo Envio
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -111,6 +143,9 @@ export default function Envios() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Data
                 </th>
@@ -149,17 +184,42 @@ export default function Envios() {
             <tbody className="bg-white divide-y divide-gray-200">
               {currentEnvios.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center">
+                  <td colSpan={12} className="px-6 py-12 text-center">
                     <Package size={48} className="mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-500 text-lg font-medium">Nenhum envio registado</p>
+                    <p className="text-gray-500 text-lg font-medium">
+                      {showHistorico ? 'Nenhum envio no histórico' : 'Nenhum envio ativo'}
+                    </p>
                     <p className="text-gray-400 mt-1">
-                      Clique em "Novo Envio" para criar o primeiro envio
+                      {showHistorico
+                        ? 'Marque envios como pagos para movê-los para o histórico'
+                        : 'Clique em "Novo Envio" para criar o primeiro envio'}
                     </p>
                   </td>
                 </tr>
               ) : (
                 currentEnvios.map((envio) => (
-                  <tr key={envio.id} className="hover:bg-gray-50">
+                  <tr
+                    key={envio.id}
+                    className={`transition-colors ${
+                      envio.pago
+                        ? 'bg-green-50 hover:bg-green-100'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <select
+                        value={envio.pago ? 'pago' : 'pendente'}
+                        onChange={(e) => handleTogglePago(envio.id, envio.pago)}
+                        className={`px-3 py-1 text-sm font-medium rounded-lg border-0 cursor-pointer transition-colors ${
+                          envio.pago
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        <option value="pendente">Pendente</option>
+                        <option value="pago">Pago</option>
+                      </select>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-sm text-gray-900">
                         <Calendar size={16} className="text-gray-400" />
@@ -245,8 +305,8 @@ export default function Envios() {
           <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                A mostrar {startIndex + 1} a {Math.min(endIndex, envios.length)} de {envios.length}{' '}
-                envios
+                A mostrar {startIndex + 1} a {Math.min(endIndex, displayEnvios.length)} de {displayEnvios.length}{' '}
+                envios {showHistorico ? 'pagos' : 'ativos'}
               </div>
               <div className="flex gap-2">
                 <button
