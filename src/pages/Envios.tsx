@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ExternalLink, Package, Calendar, Euro, Archive, Eye } from 'lucide-react';
+import { Plus, ExternalLink, Package, Calendar, Euro, Archive, Eye, CreditCard as Edit2, Trash2 } from 'lucide-react';
 import {
   getEnvios,
   createEnvio,
+  updateEnvio,
+  deleteEnvio,
   uploadCartaPorte,
   updateEnvioPago,
   Envio,
@@ -14,6 +16,7 @@ export default function Envios() {
   const [envios, setEnvios] = useState<Envio[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingEnvio, setEditingEnvio] = useState<Envio | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showHistorico, setShowHistorico] = useState(false);
   const itemsPerPage = 10;
@@ -42,33 +45,55 @@ export default function Envios() {
     try {
       let cartaPorteUrl = null;
 
-      const newEnvio = await createEnvio({
-        cliente_id: formData.cliente_id,
-        descricao: formData.descricao,
-        responsavel: formData.responsavel,
-        pedido_por: formData.pedido_por,
-        pago_por: formData.pago_por,
-        transportadora: formData.transportadora,
-        tracking: formData.tracking,
-        valor_custo: formData.valor_custo,
-        valor_cobrar: formData.valor_cobrar,
-        carta_porte_url: cartaPorteUrl,
-        numero_fatura: formData.numero_fatura,
-      });
+      if (editingEnvio) {
+        // Update existing envio
+        if (formData.carta_porte_file) {
+          cartaPorteUrl = await uploadCartaPorte(formData.carta_porte_file, editingEnvio.id);
+        }
 
-      if (formData.carta_porte_file) {
-        cartaPorteUrl = await uploadCartaPorte(formData.carta_porte_file, newEnvio.id);
-        await createEnvio({
-          ...newEnvio,
-          carta_porte_url: cartaPorteUrl,
+        await updateEnvio(editingEnvio.id, {
+          cliente_id: formData.cliente_id,
+          descricao: formData.descricao,
+          responsavel: formData.responsavel,
+          pedido_por: formData.pedido_por,
+          pago_por: formData.pago_por,
+          transportadora: formData.transportadora,
+          tracking: formData.tracking,
+          valor_custo: formData.valor_custo,
+          valor_cobrar: formData.valor_cobrar,
+          carta_porte_url: cartaPorteUrl || editingEnvio.carta_porte_url,
+          numero_fatura: formData.numero_fatura,
         });
+      } else {
+        // Create new envio
+        const newEnvio = await createEnvio({
+          cliente_id: formData.cliente_id,
+          descricao: formData.descricao,
+          responsavel: formData.responsavel,
+          pedido_por: formData.pedido_por,
+          pago_por: formData.pago_por,
+          transportadora: formData.transportadora,
+          tracking: formData.tracking,
+          valor_custo: formData.valor_custo,
+          valor_cobrar: formData.valor_cobrar,
+          carta_porte_url: cartaPorteUrl,
+          numero_fatura: formData.numero_fatura,
+        });
+
+        if (formData.carta_porte_file) {
+          cartaPorteUrl = await uploadCartaPorte(formData.carta_porte_file, newEnvio.id);
+          await updateEnvio(newEnvio.id, {
+            carta_porte_url: cartaPorteUrl,
+          });
+        }
       }
 
       setShowForm(false);
+      setEditingEnvio(null);
       loadEnvios();
     } catch (error) {
-      console.error('Erro ao criar envio:', error);
-      alert('Erro ao criar envio');
+      console.error('Erro ao salvar envio:', error);
+      alert('Erro ao salvar envio');
     }
   };
 
@@ -111,6 +136,30 @@ export default function Envios() {
     }
   };
 
+  const handleEditEnvio = (envio: Envio) => {
+    setEditingEnvio(envio);
+    setShowForm(true);
+  };
+
+  const handleDeleteEnvio = async (envioId: string) => {
+    if (!confirm('Tem a certeza que deseja eliminar este envio?')) {
+      return;
+    }
+
+    try {
+      await deleteEnvio(envioId);
+      await loadEnvios();
+    } catch (error) {
+      console.error('Erro ao eliminar envio:', error);
+      alert('Erro ao eliminar envio');
+    }
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingEnvio(null);
+  };
+
   const enviosAtivos = envios.filter(e => !e.pago);
   const enviosPagos = envios.filter(e => e.pago);
 
@@ -148,10 +197,13 @@ export default function Envios() {
             }`}
           >
             <Archive size={20} />
-            {showHistorico ? 'Ver Ativos' : 'Ver Histórico'}
+            {showHistorico ? 'Ver Ativos' : 'Ver Pagos'}
           </button>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingEnvio(null);
+              setShowForm(true);
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus size={20} />
@@ -197,7 +249,7 @@ export default function Envios() {
                   <td colSpan={7} className="px-6 py-12 text-center">
                     <Package size={48} className="mx-auto text-gray-400 mb-4" />
                     <p className="text-gray-500 text-lg font-medium">
-                      {showHistorico ? 'Nenhum envio no histórico' : 'Nenhum envio ativo'}
+                      {showHistorico ? 'Nenhum envio pago' : 'Nenhum envio ativo'}
                     </p>
                     <p className="text-gray-400 mt-1">
                       {showHistorico
@@ -278,14 +330,29 @@ export default function Envios() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => setDetailsModal({ isOpen: true, envio })}
-                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                        title="Ver todos os detalhes"
-                      >
-                        <Eye size={16} />
-                        Ver Detalhes
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setDetailsModal({ isOpen: true, envio })}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                          title="Ver todos os detalhes"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleEditEnvio(envio)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                          title="Editar envio"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEnvio(envio.id)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                          title="Eliminar envio"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -337,7 +404,13 @@ export default function Envios() {
         )}
       </div>
 
-      {showForm && <EnvioForm onSubmit={handleCreateEnvio} onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <EnvioForm
+          onSubmit={handleCreateEnvio}
+          onClose={handleCloseForm}
+          editingEnvio={editingEnvio}
+        />
+      )}
 
       {/* Modal de Detalhes */}
       <EnvioDetailsModal

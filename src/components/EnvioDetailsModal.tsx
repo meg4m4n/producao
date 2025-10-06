@@ -111,15 +111,6 @@ const EnvioDetailsModal: React.FC<EnvioDetailsModalProps> = ({
                 </div>
               </div>
 
-              {envio.numero_fatura && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Número de Fatura</label>
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900 font-mono">{envio.numero_fatura}</span>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="space-y-4">
@@ -185,6 +176,17 @@ const EnvioDetailsModal: React.FC<EnvioDetailsModalProps> = ({
               <CreditCard className="w-5 h-5" />
               <span>Informação Financeira</span>
             </h3>
+
+            {envio.numero_fatura && (
+              <div className="mb-3 pb-3 border-b border-blue-200">
+                <label className="block text-sm font-medium text-blue-700 mb-1">Número de Fatura</label>
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-900 font-mono font-semibold">{envio.numero_fatura}</span>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-blue-700 mb-1">Valor de Custo</label>
@@ -201,13 +203,13 @@ const EnvioDetailsModal: React.FC<EnvioDetailsModalProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {envio.valor_custo > 0 && envio.valor_cobrar > 0 && (
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-blue-700">Margem:</span>
                   <span className="font-semibold text-blue-900">
-                    {formatCurrency(envio.valor_cobrar - envio.valor_custo)} 
+                    {formatCurrency(envio.valor_cobrar - envio.valor_custo)}
                     ({(((envio.valor_cobrar - envio.valor_custo) / envio.valor_custo) * 100).toFixed(1)}%)
                   </span>
                 </div>

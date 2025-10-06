@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, FileText } from 'lucide-react';
-import { getClientes, createCliente } from '../services/supabaseApi';
+import { getClientes, createCliente, Envio } from '../services/supabaseApi';
 import { Cliente } from '../types';
 
 interface EnvioFormProps {
   onSubmit: (data: EnvioFormData) => void;
   onClose: () => void;
+  editingEnvio?: Envio | null;
 }
 
 export interface EnvioFormData {
@@ -22,23 +23,23 @@ export interface EnvioFormData {
   carta_porte_file?: File;
 }
 
-export default function EnvioForm({ onSubmit, onClose }: EnvioFormProps) {
+export default function EnvioForm({ onSubmit, onClose, editingEnvio }: EnvioFormProps) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [showNewClienteForm, setShowNewClienteForm] = useState(false);
   const [newClienteName, setNewClienteName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState<EnvioFormData>({
-    cliente_id: null,
-    descricao: '',
-    responsavel: '',
-    pedido_por: 'cliente',
-    pago_por: 'cliente',
-    transportadora: '',
-    tracking: '',
-    valor_custo: 0,
-    valor_cobrar: 0,
-    numero_fatura: '',
+    cliente_id: editingEnvio?.cliente_id || null,
+    descricao: editingEnvio?.descricao || '',
+    responsavel: editingEnvio?.responsavel || '',
+    pedido_por: editingEnvio?.pedido_por || 'cliente',
+    pago_por: editingEnvio?.pago_por || 'cliente',
+    transportadora: editingEnvio?.transportadora || '',
+    tracking: editingEnvio?.tracking || '',
+    valor_custo: editingEnvio?.valor_custo || 0,
+    valor_cobrar: editingEnvio?.valor_cobrar || 0,
+    numero_fatura: editingEnvio?.numero_fatura || '',
   });
 
   useEffect(() => {
@@ -113,7 +114,9 @@ export default function EnvioForm({ onSubmit, onClose }: EnvioFormProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Novo Envio</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {editingEnvio ? 'Editar Envio' : 'Novo Envio'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -374,7 +377,7 @@ export default function EnvioForm({ onSubmit, onClose }: EnvioFormProps) {
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Criar Envio
+              {editingEnvio ? 'Atualizar Envio' : 'Criar Envio'}
             </button>
           </div>
         </form>
