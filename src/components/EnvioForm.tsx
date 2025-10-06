@@ -18,6 +18,7 @@ export interface EnvioFormData {
   tracking: string;
   valor_custo: number;
   valor_cobrar: number;
+  numero_fatura: string;
   carta_porte_file?: File;
 }
 
@@ -37,6 +38,7 @@ export default function EnvioForm({ onSubmit, onClose }: EnvioFormProps) {
     tracking: '',
     valor_custo: 0,
     valor_cobrar: 0,
+    numero_fatura: '',
   });
 
   useEffect(() => {
@@ -267,6 +269,19 @@ export default function EnvioForm({ onSubmit, onClose }: EnvioFormProps) {
               value={formData.tracking}
               onChange={(e) => setFormData({ ...formData, tracking: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Número de Fatura
+            </label>
+            <input
+              type="text"
+              value={formData.numero_fatura}
+              onChange={(e) => setFormData({ ...formData, numero_fatura: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ex: FAT-2025-001"
             />
           </div>
 

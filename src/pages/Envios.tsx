@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ExternalLink, Package, Calendar, Euro, Archive } from 'lucide-react';
+import { Plus, ExternalLink, Package, Calendar, Euro, Archive, Eye } from 'lucide-react';
 import {
   getEnvios,
   createEnvio,
@@ -8,6 +8,7 @@ import {
   Envio,
 } from '../services/supabaseApi';
 import EnvioForm, { EnvioFormData } from '../components/EnvioForm';
+import EnvioDetailsModal from '../components/EnvioDetailsModal';
 
 export default function Envios() {
   const [envios, setEnvios] = useState<Envio[]>([]);
@@ -16,6 +17,10 @@ export default function Envios() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showHistorico, setShowHistorico] = useState(false);
   const itemsPerPage = 10;
+  const [detailsModal, setDetailsModal] = useState<{
+    isOpen: boolean;
+    envio: Envio | null;
+  }>({ isOpen: false, envio: null });
 
   useEffect(() => {
     loadEnvios();
@@ -48,6 +53,7 @@ export default function Envios() {
         valor_custo: formData.valor_custo,
         valor_cobrar: formData.valor_cobrar,
         carta_porte_url: cartaPorteUrl,
+        numero_fatura: formData.numero_fatura,
       });
 
       if (formData.carta_porte_file) {
@@ -77,6 +83,22 @@ export default function Envios() {
 
   const formatCurrency = (value: number) => {
     return `${value.toFixed(2)}€`;
+  };
+
+  const getTrackingUrl = (transportadora: string, tracking: string): string | null => {
+    if (!tracking) return null;
+    
+    const transportadoraLower = transportadora.toLowerCase();
+    
+    if (transportadoraLower.includes('tnt')) {
+      return `https://www.tnt.com/express/pt_pt/site/shipping-tools/tracking.html?searchType=con&cons=${tracking}`;
+    } else if (transportadoraLower.includes('dhl')) {
+      return `https://www.dhl.com/pt-pt/home/tracking/tracking-express.html?submit=1&tracking-id=${tracking}`;
+    } else if (transportadoraLower.includes('ups')) {
+      return `https://www.ups.com/track?loc=pt_PT&tracknum=${tracking}`;
+    }
+    
+    return null;
   };
 
   const handleTogglePago = async (envioId: string, currentPago: boolean) => {
@@ -156,35 +178,23 @@ export default function Envios() {
                   Descrição
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Responsável
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Transportadora
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tracking
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pedido Por
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pago Por
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Custo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   A Cobrar
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Carta Porte
+                  Ações
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentEnvios.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <Package size={48} className="mx-auto text-gray-400 mb-4" />
                     <p className="text-gray-500 text-lg font-medium">
                       {showHistorico ? 'Nenhum envio no histórico' : 'Nenhum envio ativo'}
@@ -237,41 +247,29 @@ export default function Envios() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{envio.responsavel}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-900">{envio.transportadora}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-600">{envio.tracking || '-'}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          envio.pedido_por === 'cliente'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {envio.pedido_por === 'cliente' ? 'Cliente' : 'Lomartex'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          envio.pago_por === 'cliente'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {envio.pago_por === 'cliente' ? 'Cliente' : 'Lomartex'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1 text-sm text-gray-900">
-                        <Euro size={14} className="text-gray-400" />
-                        {formatCurrency(envio.valor_custo)}
-                      </div>
+                      {envio.tracking ? (
+                        (() => {
+                          const trackingUrl = getTrackingUrl(envio.transportadora, envio.tracking);
+                          return trackingUrl ? (
+                            <a
+                              href={trackingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                              <ExternalLink size={14} />
+                              {envio.tracking}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-gray-600">{envio.tracking}</span>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
@@ -280,19 +278,14 @@ export default function Envios() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {envio.carta_porte_url ? (
-                        <a
-                          href={envio.carta_porte_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          <ExternalLink size={16} />
-                          Ver
-                        </a>
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
+                      <button
+                        onClick={() => setDetailsModal({ isOpen: true, envio })}
+                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Ver todos os detalhes"
+                      >
+                        <Eye size={16} />
+                        Ver Detalhes
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -345,6 +338,13 @@ export default function Envios() {
       </div>
 
       {showForm && <EnvioForm onSubmit={handleCreateEnvio} onClose={() => setShowForm(false)} />}
+
+      {/* Modal de Detalhes */}
+      <EnvioDetailsModal
+        isOpen={detailsModal.isOpen}
+        onClose={() => setDetailsModal({ isOpen: false, envio: null })}
+        envio={detailsModal.envio}
+      />
     </div>
   );
 }

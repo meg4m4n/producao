@@ -675,6 +675,7 @@ export interface Envio {
   valor_custo: number;
   valor_cobrar: number;
   carta_porte_url: string | null;
+  numero_fatura: string | null;
   pago: boolean;
   pago_at: string | null;
   created_at: string;
@@ -706,6 +707,7 @@ export const getEnvios = async (): Promise<Envio[]> => {
       valor_custo: parseFloat(envio.valor_custo || 0),
       valor_cobrar: parseFloat(envio.valor_cobrar || 0),
       carta_porte_url: envio.carta_porte_url,
+      numero_fatura: envio.numero_fatura,
       pago: envio.pago || false,
       pago_at: envio.pago_at || null,
       created_at: envio.created_at,
@@ -744,6 +746,7 @@ export const getEnvioById = async (id: string): Promise<Envio | null> => {
       valor_custo: parseFloat(data.valor_custo || 0),
       valor_cobrar: parseFloat(data.valor_cobrar || 0),
       carta_porte_url: data.carta_porte_url,
+      numero_fatura: data.numero_fatura,
       pago: data.pago || false,
       pago_at: data.pago_at || null,
       created_at: data.created_at,
@@ -770,6 +773,7 @@ export const createEnvio = async (envio: Omit<Envio, 'id' | 'created_at' | 'upda
         valor_custo: envio.valor_custo,
         valor_cobrar: envio.valor_cobrar,
         carta_porte_url: envio.carta_porte_url,
+        numero_fatura: envio.numero_fatura,
       })
       .select(`
         *,
@@ -792,6 +796,7 @@ export const createEnvio = async (envio: Omit<Envio, 'id' | 'created_at' | 'upda
       valor_custo: parseFloat(data.valor_custo || 0),
       valor_cobrar: parseFloat(data.valor_cobrar || 0),
       carta_porte_url: data.carta_porte_url,
+      numero_fatura: data.numero_fatura,
       pago: data.pago || false,
       pago_at: data.pago_at || null,
       created_at: data.created_at,
@@ -830,6 +835,7 @@ export const updateEnvio = async (id: string, envio: Partial<Omit<Envio, 'id' | 
       valor_custo: parseFloat(data.valor_custo || 0),
       valor_cobrar: parseFloat(data.valor_cobrar || 0),
       carta_porte_url: data.carta_porte_url,
+      numero_fatura: data.numero_fatura,
       pago: data.pago || false,
       pago_at: data.pago_at || null,
       created_at: data.created_at,
