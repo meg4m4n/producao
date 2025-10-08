@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Users as UsersIcon, Plus, Edit, Trash2, Shield, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users as UsersIcon, Plus, Edit, Trash2, Shield } from 'lucide-react';
 import { User, PagePermission } from '../types/auth';
 import { PageType } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useUsers } from '../hooks/useUsers';
 import UserForm from '../components/UserForm';
 
 const Users: React.FC = () => {
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  const { users, loading, error, createUser, updateUser, deleteUser } = useUsers();
   const [userForm, setUserForm] = useState<{
     isOpen: boolean;
     user?: User;
   }>({ isOpen: false });
-  const [loading, setLoading] = useState(true);
 
   // Available pages for permission management
   const availablePages: { id: PageType; label: string }[] = [
@@ -24,78 +24,39 @@ const Users: React.FC = () => {
     { id: 'apps-lomartex', label: 'Apps Lomartex' },
     { id: 'controlo-qualidade', label: 'Controlo de Qualidade' },
     { id: 'financeiro', label: 'Financeiro' },
+    { id: 'envios', label: 'Envios' },
     { id: 'users', label: 'Utilizadores' }
   ];
 
-  useEffect(() => {
-    // Mock data loading
-    setTimeout(() => {
-      setUsers([
-        {
-          id: '1',
-          email: 'rmegaguimaraes@gmail.com',
-          name: 'Rui Guimarães',
-          role: 'admin',
-          permissions: availablePages.map(page => ({
-            page: page.id,
-            canView: true,
-            canEdit: true
-          })),
-          created_at: '2025-01-01T00:00:00Z',
-          updated_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        },
-        {
-          id: '2',
-          email: 'operador@lomartex.pt',
-          name: 'Operador Produção',
-          role: 'user',
-          permissions: [
-            { page: 'producoes', canView: true, canEdit: false },
-            { page: 'preparar-componentes', canView: true, canEdit: true },
-            { page: 'gantt', canView: true, canEdit: false }
-          ],
-          created_at: '2025-01-15T00:00:00Z',
-          updated_at: '2025-01-15T00:00:00Z'
-        }
-      ]);
-      setLoading(false);
-    }, 500);
-  }, []);
 
-  const handleCreateUser = (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreateUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     if (!userData.password) {
       alert('Palavra-passe é obrigatória para novos utilizadores');
       return;
     }
-    
-    const newUser: User = {
-      ...userData,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    setUsers(prev => [...prev, newUser]);
-    setUserForm({ isOpen: false });
+
+    try {
+      await createUser(userData);
+      setUserForm({ isOpen: false });
+    } catch (error) {
+      console.error('Erro ao criar utilizador:', error);
+      alert('Erro ao criar utilizador');
+    }
   };
 
-  const handleUpdateUser = (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdateUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     if (!userForm.user) return;
-    
-    const updatedUser: User = {
-      ...userData,
-      // Keep existing password if no new password provided
-      password: userData.password || userForm.user.password,
-      id: userForm.user.id,
-      created_at: userForm.user.created_at,
-      updated_at: new Date().toISOString()
-    };
-    
-    setUsers(prev => prev.map(u => u.id === userForm.user!.id ? updatedUser : u));
-    setUserForm({ isOpen: false });
+
+    try {
+      await updateUser(userForm.user.id, userData);
+      setUserForm({ isOpen: false });
+    } catch (error) {
+      console.error('Erro ao atualizar utilizador:', error);
+      alert('Erro ao atualizar utilizador');
+    }
   };
 
-  const handleDeleteUser = (id: string) => {
+  const handleDeleteUser = async (id: string) => {
     const userToDelete = users.find(u => u.id === id);
     if (!userToDelete) return;
 
@@ -105,7 +66,12 @@ const Users: React.FC = () => {
     }
 
     if (confirm(`Tem certeza que deseja eliminar o utilizador "${userToDelete.name}"?`)) {
-      setUsers(prev => prev.filter(u => u.id !== id));
+      try {
+        await deleteUser(id);
+      } catch (error) {
+        console.error('Erro ao eliminar utilizador:', error);
+        alert('Erro ao eliminar utilizador');
+      }
     }
   };
 
@@ -127,6 +93,22 @@ const Users: React.FC = () => {
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando utilizadores...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
